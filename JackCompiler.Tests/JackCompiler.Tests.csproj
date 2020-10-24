@@ -17,6 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JackAnalyser\JackAnalyser.csproj" />
+    <ProjectReference Include="..\JackCompiler\JackCompiler.csproj" />
   </ItemGroup>
 </Project>

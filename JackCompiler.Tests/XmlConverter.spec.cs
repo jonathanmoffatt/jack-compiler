@@ -2,7 +2,7 @@
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace JackAnalyser.Tests
+namespace JackCompiler.Tests
 {
     #region ConvertingTokensToXml
 

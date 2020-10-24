@@ -1,4 +1,4 @@
-﻿namespace JackAnalyser
+﻿namespace JackCompiler
 {
     public abstract class NodeBase
     {

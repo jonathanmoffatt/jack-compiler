@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Xml;
 
-namespace JackAnalyser
+namespace JackCompiler
 {
     public class XmlConverter
     {

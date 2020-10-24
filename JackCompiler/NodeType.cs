@@ -1,5 +1,5 @@
 ﻿using System;
-namespace JackAnalyser
+namespace JackCompiler
 {
     public enum NodeType
     {

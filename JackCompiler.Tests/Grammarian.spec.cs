@@ -3,7 +3,7 @@ using System.Xml;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace JackAnalyser.Tests
+namespace JackCompiler.Tests
 {
     internal static class NodeTestExtensions
     {

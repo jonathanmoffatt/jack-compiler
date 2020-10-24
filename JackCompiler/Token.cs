@@ -1,4 +1,4 @@
-﻿namespace JackAnalyser
+﻿namespace JackCompiler
 {
     public class Token : NodeBase
     {

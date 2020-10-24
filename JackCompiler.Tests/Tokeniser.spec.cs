@@ -3,7 +3,7 @@ using System.Text;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace JackAnalyser.Tests
+namespace JackCompiler.Tests
 {
     #region WhenWorkingWithTheTokeniser
 

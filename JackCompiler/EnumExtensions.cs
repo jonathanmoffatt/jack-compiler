@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace JackAnalyser
+namespace JackCompiler
 {
     public static class EnumExtensions
     {

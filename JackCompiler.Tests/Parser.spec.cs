@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using Moq.AutoMock;
 
-namespace JackAnalyser.Tests
+namespace JackCompiler.Tests
 {
     #region WhenRunningTheParser
 

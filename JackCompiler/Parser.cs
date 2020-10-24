@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace JackAnalyser
+namespace JackCompiler
 {
     public class Parser
     {
