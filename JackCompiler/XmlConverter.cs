@@ -32,6 +32,13 @@ namespace JackCompiler
             {
                 el.AppendChild(doc.CreateTextNode(((Token)nodeBase).Value));
             }
+            if (nodeBase is Identifier)
+            {
+                var id = nodeBase as Identifier;
+                el.SetAttribute("kind", id.Kind.ToString().ToLower());
+                if (id.Number.HasValue) el.SetAttribute("number", id.Number.ToString());
+                el.SetAttribute("isDefinition", id.IsDefinition.ToString().ToLower());
+            }
             if (nodeBase is Node)
             {
                 Node n = (Node)nodeBase;

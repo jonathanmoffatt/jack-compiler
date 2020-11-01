@@ -32,6 +32,40 @@ namespace JackCompiler.Tests
 
     #endregion
 
+    #region ConvertingIdentifierToXml
+
+    [TestClass]
+    public class ConvertingIdentifierToXml
+    {
+        private XmlConverter classUnderTest;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new XmlConverter();
+        }
+
+        [TestMethod]
+        public void IncludesTokenInformationInTheXml()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<tokens><identifier kind='argument' number='3' isDefinition='true'>x</identifier></tokens>");
+            var identifier = new Identifier("x", IdentifierKind.Argument, true, 3);
+            classUnderTest.ConvertTokens(identifier).Should().BeEquivalentTo(doc);
+        }
+
+        [TestMethod]
+        public void LeavesOutNumberIfThereIsntOne()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<tokens><identifier kind='argument' isDefinition='false'>x</identifier></tokens>");
+            var identifier = new Identifier("x", IdentifierKind.Argument, false);
+            classUnderTest.ConvertTokens(identifier).Should().BeEquivalentTo(doc);
+        }
+    }
+
+    #endregion
+
     #region ConvertingTreeToXml
 
     [TestClass]

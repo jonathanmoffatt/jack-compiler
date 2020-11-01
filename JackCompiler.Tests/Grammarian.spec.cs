@@ -12,7 +12,8 @@ namespace JackCompiler.Tests
             var converter = new XmlConverter();
             var doc = new XmlDocument();
             doc.LoadXml(expectedXml);
-            converter.ConvertNode(node).Should().BeEquivalentTo(doc);
+            XmlDocument xmlDocument = converter.ConvertNode(node);
+            xmlDocument.Should().BeEquivalentTo(doc);
         }
     }
 
@@ -40,7 +41,7 @@ namespace JackCompiler.Tests
             classUnderTest.LoadTokens(t1, t2, t3, t4).ParseClass().ShouldGenerateXml(@"
                 <class>
                   <keyword>class</keyword>
-                  <identifier>blah</identifier>
+                  <identifier kind='class' isDefinition='true'>blah</identifier>
                   <symbol>{</symbol>
                   <symbol>}</symbol>
                 </class>");
@@ -121,9 +122,9 @@ namespace JackCompiler.Tests
                   <classVarDec>
                     <keyword>static</keyword>
                     <keyword>boolean</keyword>
-                    <identifier>hasStarted</identifier>
+                    <identifier kind='static' isDefinition='true' number='0'>hasStarted</identifier>
                     <symbol>,</symbol>
-                    <identifier>hasFinished</identifier>
+                    <identifier kind='static' isDefinition='true' number='1'>hasFinished</identifier>
                     <symbol>;</symbol>
                   </classVarDec>
             ");
@@ -139,9 +140,9 @@ namespace JackCompiler.Tests
                   <classVarDec>
                     <keyword>field</keyword>
                     <keyword>boolean</keyword>
-                    <identifier>hasStarted</identifier>
+                    <identifier kind='field' isDefinition='true' number='0'>hasStarted</identifier>
                     <symbol>,</symbol>
-                    <identifier>hasFinished</identifier>
+                    <identifier kind='field' isDefinition='true' number='1'>hasFinished</identifier>
                     <symbol>;</symbol>
                   </classVarDec>
             ");
@@ -164,7 +165,7 @@ namespace JackCompiler.Tests
             classUnderTest
                 .Invoking(c => c.ParseClassVariableDeclaration())
                 .Should().Throw<ApplicationException>()
-                .WithMessage("class variable declaration expected a variable name, reached end of file instead");
+                .WithMessage("class static or field declaration expected a variable name, reached end of file instead");
         }
     }
 
@@ -219,14 +220,14 @@ namespace JackCompiler.Tests
                 <subroutineDec>
                     <keyword>constructor</keyword>
                     <keyword>void</keyword>
-                    <identifier>doSomething</identifier>
+                    <identifier kind='subroutine' isDefinition='true'>doSomething</identifier>
                     <symbol>(</symbol>
                     <parameterList>
                         <keyword>int</keyword>
-                        <identifier>x</identifier>
+                        <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                         <symbol>,</symbol>
-                        <identifier>Game</identifier>
-                        <identifier>game</identifier>
+                        <identifier kind='class' isDefinition='false'>Game</identifier>
+                        <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -247,14 +248,14 @@ namespace JackCompiler.Tests
                   <subroutineDec>
                     <keyword>function</keyword>
                     <keyword>void</keyword>
-                    <identifier>doSomething</identifier>
+                    <identifier kind='subroutine' isDefinition='true'>doSomething</identifier>
                     <symbol>(</symbol>
                     <parameterList>
                       <keyword>int</keyword>
-                      <identifier>x</identifier>
+                      <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                       <symbol>,</symbol>
-                      <identifier>Game</identifier>
-                      <identifier>game</identifier>
+                      <identifier kind='class' isDefinition='false'>Game</identifier>
+                      <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -275,14 +276,14 @@ namespace JackCompiler.Tests
                   <subroutineDec>
                     <keyword>method</keyword>
                     <keyword>void</keyword>
-                    <identifier>doSomething</identifier>
+                    <identifier kind='subroutine' isDefinition='true'>doSomething</identifier>
                     <symbol>(</symbol>
                     <parameterList>
                       <keyword>int</keyword>
-                      <identifier>x</identifier>
+                      <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                       <symbol>,</symbol>
-                      <identifier>Game</identifier>
-                      <identifier>game</identifier>
+                      <identifier kind='class' isDefinition='false'>Game</identifier>
+                      <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -303,14 +304,14 @@ namespace JackCompiler.Tests
                       <subroutineDec>
                         <keyword>constructor</keyword>
                         <keyword>void</keyword>
-                        <identifier>doSomething</identifier>
+                        <identifier kind='subroutine' isDefinition='true'>doSomething</identifier>
                         <symbol>(</symbol>
                         <parameterList>
                           <keyword>int</keyword>
-                          <identifier>x</identifier>
+                          <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                           <symbol>,</symbol>
-                          <identifier>Game</identifier>
-                          <identifier>game</identifier>
+                          <identifier kind='class' isDefinition='false'>Game</identifier>
+                          <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
                         </parameterList>
                         <symbol>)</symbol>
                         <subroutineBody>
@@ -318,15 +319,15 @@ namespace JackCompiler.Tests
                           <varDec>
                             <keyword>var</keyword>
                             <keyword>boolean</keyword>
-                            <identifier>hasStarted</identifier>
+                            <identifier kind='var' isDefinition='true' number='0'>hasStarted</identifier>
                             <symbol>,</symbol>
-                            <identifier>hasFinished</identifier>
+                            <identifier kind='var' isDefinition='true' number='1'>hasFinished</identifier>
                             <symbol>;</symbol>
                           </varDec>
                           <varDec>
                             <keyword>var</keyword>
-                            <identifier>Player</identifier>
-                            <identifier>player</identifier>
+                            <identifier kind='class' isDefinition='false'>Player</identifier>
+                            <identifier kind='var' isDefinition='true' number='2'>player</identifier>
                             <symbol>;</symbol>
                           </varDec>
                           <symbol>}</symbol>
@@ -356,23 +357,24 @@ namespace JackCompiler.Tests
                 new Token(NodeType.IntegerConstant, "1234"),
                 new Token(NodeType.Symbol, ";")
             );
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
         }
 
         [TestMethod]
         public void RecognisesLetStatementWithSimpleExpression()
         {
             classUnderTest.ParseLetStatement().ShouldGenerateXml(@"
-                        <letStatement>
-                          <keyword>let</keyword>
-                          <identifier>x</identifier>
-                          <symbol>=</symbol>
-                          <expression>
-                            <term>
-                              <integerConstant>1234</integerConstant>
-                            </term>
-                          </expression>
-                          <symbol>;</symbol>
-                        </letStatement>
+                <letStatement>
+                    <keyword>let</keyword>
+                    <identifier kind='var' isDefinition='false' number='0'>x</identifier>
+                    <symbol>=</symbol>
+                    <expression>
+                    <term>
+                        <integerConstant>1234</integerConstant>
+                    </term>
+                    </expression>
+                    <symbol>;</symbol>
+                </letStatement>
             ");
         }
     }
@@ -408,15 +410,18 @@ namespace JackCompiler.Tests
         [TestMethod]
         public void RecognisesLetStatementWithMoreComplexExpression()
         {
+            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Field);
+            classUnderTest.AddToSymbolTable("finished", IdentifierKind.Field);
             classUnderTest.ParseLetStatement()
                 .ShouldGenerateXml(@"
                             <letStatement>
                               <keyword>let</keyword>
-                              <identifier>y</identifier>
+                              <identifier kind='var' isDefinition='false' number='0'>y</identifier>
                               <symbol>[</symbol>
                               <expression>
                                 <term>
-                                  <identifier>x</identifier>
+                                  <identifier kind='field' isDefinition='false' number='0'>x</identifier>
                                 </term>
                                 <symbol>+</symbol>
                                 <term>
@@ -429,7 +434,7 @@ namespace JackCompiler.Tests
                                 <term>
                                   <symbol>~</symbol>
                                   <term>
-                                    <identifier>finished</identifier>
+                                    <identifier kind='field' isDefinition='false' number='1'>finished</identifier>
                                   </term>
                                 </term>
                               </expression>
@@ -474,14 +479,16 @@ namespace JackCompiler.Tests
         [TestMethod]
         public void ShouldParseCorrectlyWithReturnExpression()
         {
-            classUnderTest.LoadTokens(t1, t2, t3)
+            classUnderTest.LoadTokens(t1, t2, t3);
+            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var);
+            classUnderTest
                 .ParseReturnStatement()
                 .ShouldGenerateXml(@"
                     <returnStatement>
                         <keyword>return</keyword>
                         <expression>
                             <term>
-                                <identifier>result</identifier>
+                                <identifier kind='var' isDefinition='false' number='0'>result</identifier>
                             </term>
                         </expression>
                         <symbol>;</symbol>
@@ -530,6 +537,7 @@ namespace JackCompiler.Tests
         public void ParsesCorrectlyWithoutAnElseBlock()
         {
             classUnderTest.LoadTokens(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static);
             classUnderTest.ParseIfStatement().ShouldGenerateXml(@"
                 <ifStatement>
                   <keyword>if</keyword>
@@ -539,7 +547,7 @@ namespace JackCompiler.Tests
                         <symbol>(</symbol>
                         <expression>
                             <term>
-                                <identifier>x</identifier>
+                                <identifier kind='static' isDefinition='false' number='0'>x</identifier>
                             </term>
                             <symbol>*</symbol>
                             <term>
@@ -570,6 +578,8 @@ namespace JackCompiler.Tests
         public void ParsesCorrectlyWithAnElseBlock()
         {
             classUnderTest.LoadTokens(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static);
+            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var);
             classUnderTest.ParseIfStatement().ShouldGenerateXml(@"
                 <ifStatement>
                   <keyword>if</keyword>
@@ -579,7 +589,7 @@ namespace JackCompiler.Tests
                         <symbol>(</symbol>
                         <expression>
                             <term>
-                                <identifier>x</identifier>
+                                <identifier kind='static' isDefinition='false' number='0'>x</identifier>
                             </term>
                             <symbol>*</symbol>
                             <term>
@@ -609,7 +619,7 @@ namespace JackCompiler.Tests
                         <keyword>return</keyword>
                         <expression>
                             <term>
-                                <identifier>result</identifier>
+                                <identifier kind='var' isDefinition='false' number='0'>result</identifier>
                             </term>
                         </expression>
                         <symbol>;</symbol>
@@ -647,6 +657,9 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ";"),
                 new Token(NodeType.Symbol, "}")
             );
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("inProgress", IdentifierKind.Field);
         }
 
         [TestMethod]
@@ -658,7 +671,7 @@ namespace JackCompiler.Tests
                   <symbol>(</symbol>
                   <expression>
                     <term>
-                        <identifier>inProgress</identifier>
+                        <identifier kind='field' isDefinition='false' number='0'>inProgress</identifier>
                     </term>
                   </expression>
                 <symbol>)</symbol>
@@ -666,11 +679,11 @@ namespace JackCompiler.Tests
                 <statements>
                     <letStatement>
                         <keyword>let</keyword>
-                        <identifier>x</identifier>
+                        <identifier kind='var' isDefinition='false' number='0'>x</identifier>
                         <symbol>=</symbol>
                         <expression>
                             <term>
-                                <identifier>y</identifier>
+                                <identifier kind='var' isDefinition='false' number='1'>y</identifier>
                             </term>
                         </expression>
                         <symbol>;</symbol>
@@ -711,7 +724,7 @@ namespace JackCompiler.Tests
             classUnderTest.ParseExpression().ShouldGenerateXml(@"
                 <expression>
                     <term>
-                        <identifier>subroutineName</identifier>
+                        <identifier kind='subroutine' isDefinition='false'>subroutineName</identifier>
                         <symbol>(</symbol>
                         <expressionList>
                             <expression>
@@ -762,9 +775,9 @@ namespace JackCompiler.Tests
             classUnderTest.ParseExpression().ShouldGenerateXml(@"
                 <expression>
                     <term>
-                        <identifier>myClass</identifier>
+                        <identifier kind='class' isDefinition='false'>myClass</identifier>
                         <symbol>.</symbol>
-                        <identifier>doSomething</identifier>
+                        <identifier kind='subroutine' isDefinition='false'>doSomething</identifier>
                         <symbol>(</symbol>
                         <expressionList>
                             <expression>
@@ -801,6 +814,7 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ")"),
                 new Token(NodeType.Symbol, ";")
             );
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
         }
 
         [TestMethod]
@@ -809,12 +823,12 @@ namespace JackCompiler.Tests
             classUnderTest.ParseDoStatement().ShouldGenerateXml(@"
                 <doStatement>
                     <keyword>do</keyword>
-                    <identifier>something</identifier>
+                    <identifier kind='subroutine' isDefinition='false'>something</identifier>
                     <symbol>(</symbol>
                     <expressionList>
                         <expression>
                             <term>
-                                <identifier>x</identifier>
+                                <identifier kind='var' isDefinition='false' number='0'>x</identifier>
                             </term>
                         </expression>
                     </expressionList>
@@ -852,39 +866,40 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ")"),
                 new Token(NodeType.Symbol, ";")
             );
+            classUnderTest.AddToSymbolTable("blah", IdentifierKind.Argument);
         }
 
         [TestMethod]
         public void ParsesCorrectly()
         {
             classUnderTest.ParseDoStatement().ShouldGenerateXml(@"
-<doStatement>
-    <keyword>do</keyword>
-    <identifier>myClass</identifier>
-    <symbol>.</symbol>
-    <identifier>something</identifier>
-    <symbol>(</symbol>
-    <expressionList>
-        <expression>
-            <term>
-                <integerConstant>5</integerConstant>
-            </term>
-            <symbol>+</symbol>
-            <term>
-                <integerConstant>3</integerConstant>
-            </term>
-        </expression>
-        <symbol>,</symbol>
-        <expression>
-            <term>
-                <identifier>blah</identifier>
-            </term>
-        </expression>
-    </expressionList>
-    <symbol>)</symbol>
-    <symbol>;</symbol>
-</doStatement>
-");
+                <doStatement>
+                    <keyword>do</keyword>
+                    <identifier kind='class' isDefinition='false'>myClass</identifier>
+                    <symbol>.</symbol>
+                    <identifier kind='subroutine' isDefinition='false'>something</identifier>
+                    <symbol>(</symbol>
+                    <expressionList>
+                        <expression>
+                            <term>
+                                <integerConstant>5</integerConstant>
+                            </term>
+                            <symbol>+</symbol>
+                            <term>
+                                <integerConstant>3</integerConstant>
+                            </term>
+                        </expression>
+                        <symbol>,</symbol>
+                        <expression>
+                            <term>
+                                <identifier kind='argument' isDefinition='false' number='0'>blah</identifier>
+                            </term>
+                        </expression>
+                    </expressionList>
+                    <symbol>)</symbol>
+                    <symbol>;</symbol>
+                </doStatement>
+                ");
         }
     }
 
