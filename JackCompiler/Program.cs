@@ -34,12 +34,18 @@ namespace JackCompiler
                 parser.Parse(tokeniser);
                 SaveXml(sourceFile, xmlConverter.ConvertTokens(parser.Tokens), true);
                 SaveXml(sourceFile, xmlConverter.ConvertNode(parser.Tree), false);
+
+                using (var vmFile = new StreamWriter(GetOutputFileName(sourceFile, "", "vm")))
+                {
+                    var vmCompiler = new VmCompiler(parser.Tree, vmFile);
+                    vmCompiler.Compile();
+                }
             }
         }
 
         private static void SaveXml(string sourceFile, XmlDocument xml, bool isTokens)
         {
-            string fileName = GetOutputFileName(sourceFile, isTokens ? "T" : "");
+            string fileName = GetOutputFileName(sourceFile, isTokens ? "T" : "", "xml");
             XmlWriterSettings settings = new XmlWriterSettings
             {
                 OmitXmlDeclaration = true,
@@ -55,18 +61,18 @@ namespace JackCompiler
 
         private static bool Initialise(string[] args)
         {
-            Console.WriteLine("JACK Analyser");
+            Console.WriteLine("JACK Compiler");
             Console.WriteLine("-------------");
             string error = GetValidationErrors(args);
             if (error != null)
             {
-                Console.WriteLine("Usage (simple):      dotnet ./JackAnalyser.dll [source-file]");
-                Console.WriteLine("Usage (complex):     dotnet ./JackAnalyser.dll [source-directory]");
+                Console.WriteLine("Usage (simple):      dotnet ./JackCompiler.dll [source-file]");
+                Console.WriteLine("Usage (complex):     dotnet ./JackCompiler.dll [source-directory]");
                 Console.WriteLine();
                 Console.WriteLine("source-file:");
                 Console.WriteLine("    Path to file containing JACK code (must have a .jack file extension).");
-                Console.WriteLine("    Results will be written to a file named after the source file, but with an .xml file extension. Any existing file with this name will be overwritten.");
-                Console.WriteLine("    An intermediate results file will also be written containing the tokens only. It will also be named after the source file with an .xml file extension, but will have a T suffix. Any existing file with this name will be overwritten.");
+                Console.WriteLine("    Results will be written to a file named after the source file, but with an .vm file extension. Any existing file with this name will be overwritten.");
+                Console.WriteLine("    Two intermediate result files will also be written to files named after the source file, but with an .xml file extension (containing the parsed tokens) and with a T.xml extension (containing the tokens only).");
                 Console.WriteLine("");
                 Console.WriteLine("source-directory:");
                 Console.WriteLine("    Path to directory containing .jack files.");
@@ -111,12 +117,12 @@ namespace JackCompiler
             return files;
         }
 
-        private static string GetOutputFileName(string sourceFile, string suffix = "")
+        private static string GetOutputFileName(string sourceFile, string suffix, string extension)
         {
             string dir = Path.GetDirectoryName(sourceFile);
             string fn = Path.GetFileNameWithoutExtension(sourceFile);
             char sep = Path.DirectorySeparatorChar;
-            return $"{dir}{sep}{fn}{suffix}.xml";
+            return $"{dir}{sep}{fn}{suffix}.{extension}";
         }
 
     }
