@@ -4,26 +4,38 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace JackCompiler.Tests
 {
+    internal static class VmCompilerTestingExtensions
+    {
+        public static string CompilingJackCode(this VmCompiler vmCompiler, string jackCode)
+        {
+            using (var tokeniser = new Tokeniser(jackCode))
+            {
+                var output = new StringWriter();
+                var parser = new Parser(new Grammarian());
+                parser.Parse(tokeniser);
+                vmCompiler.Compile(parser.Tree, output);
+                return output.ToString();
+            }
+
+        }
+    }
     #region WhenCompiling
 
     [TestClass]
     public class WhenCompiling
     {
-        private StringWriter output;
         private VmCompiler classUnderTest;
 
         [TestInitialize]
         public void Setup()
         {
-            output = new StringWriter();
-            classUnderTest = new VmCompiler(new Node(NodeType.Class), output);
+            classUnderTest = new VmCompiler();
         }
 
         [TestMethod]
         public void WritesToTheProvidedStream()
         {
-            classUnderTest.Compile();
-            output.ToString().Should().Be("hello world\n");
+            classUnderTest.CompilingJackCode("class something {}").Should().Be("hello world\n");
         }
     }
 

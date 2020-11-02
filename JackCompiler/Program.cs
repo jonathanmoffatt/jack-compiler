@@ -31,14 +31,14 @@ namespace JackCompiler
             {
                 var parser = new Parser(new Grammarian());
                 var xmlConverter = new XmlConverter();
+                var vmCompiler = new VmCompiler();
                 parser.Parse(tokeniser);
                 SaveXml(sourceFile, xmlConverter.ConvertTokens(parser.Tokens), true);
                 SaveXml(sourceFile, xmlConverter.ConvertNode(parser.Tree), false);
 
                 using (var vmFile = new StreamWriter(GetOutputFileName(sourceFile, "", "vm")))
                 {
-                    var vmCompiler = new VmCompiler(parser.Tree, vmFile);
-                    vmCompiler.Compile();
+                    vmCompiler.Compile(parser.Tree, vmFile);
                 }
             }
         }
