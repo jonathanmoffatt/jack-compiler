@@ -138,7 +138,6 @@ namespace JackCompiler
             if (Peek() != "do") return null;
             var statement = new Node(NodeType.DoStatement);
             DequeueKeyword(statement);
-            IdentifierKind kind = Peek() == "." ? IdentifierKind.Class : IdentifierKind.Subroutine;
             DequeueIdentifierUsage(statement, "expected identifier after do statement");
             if (Peek() == ".")
             {
