@@ -64,6 +64,7 @@ namespace JackCompiler
 
         public Node ParseSubroutineDeclaration()
         {
+            symbolTable.ResetSubroutineTable();
             var sd = new Node(NodeType.SubroutineDeclaration);
             DequeueKeyword(sd);
             DequeueType(sd);

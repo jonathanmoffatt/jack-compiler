@@ -339,6 +339,116 @@ namespace JackCompiler.Tests
 
     #endregion
 
+    #region MultipleSubroutineGrammar
+
+    [TestClass]
+    public class MultipleSubroutineGrammar
+    {
+        private Grammarian classUnderTest;
+        private Token[] tokens;
+        //private Token cd1, cd2, cd3, cd4;
+        //private Token sda1, sda2, sda3, sda4, sdaa1, sdaa2, sda5, sda6, sda7, sda8, sda9, sda10, sda11;
+        //private Token sdb1, sdb2, sdb3, sdb4, sdba1, sdba2, sdb5, sdb6, sdb7, sdb8, sdb9, sdb10, sdb11;
+
+        [TestInitialize]
+        public void Setup()
+        {
+            tokens = new[] {
+                new Token(NodeType.Keyword, "class"),
+                new Token(NodeType.Identifier, "MyClass"),
+                new Token(NodeType.Symbol, "{"),
+                new Token(NodeType.Keyword, "function"),
+                new Token(NodeType.Keyword, "void"),
+                new Token(NodeType.Identifier, "doSomething"),
+                new Token(NodeType.Symbol, "("),
+                new Token(NodeType.Keyword, "int"),
+                new Token(NodeType.Identifier, "x"),
+                new Token(NodeType.Symbol, ")"),
+                new Token(NodeType.Symbol, "{"),
+                new Token(NodeType.Keyword, "var"),
+                new Token(NodeType.Keyword, "boolean"),
+                new Token(NodeType.Identifier, "hasStarted"),
+                new Token(NodeType.Symbol, ";"),
+                new Token(NodeType.Symbol, "}"),
+                new Token(NodeType.Keyword, "function"),
+                new Token(NodeType.Keyword, "void"),
+                new Token(NodeType.Identifier, "doSomethingElse"),
+                new Token(NodeType.Symbol, "("),
+                new Token(NodeType.Keyword, "int"),
+                new Token(NodeType.Identifier, "x"),
+                new Token(NodeType.Symbol, ")"),
+                new Token(NodeType.Symbol, "{"),
+                new Token(NodeType.Keyword, "var"),
+                new Token(NodeType.Keyword, "boolean"),
+                new Token(NodeType.Identifier, "hasStarted"),
+                new Token(NodeType.Symbol, ";"),
+                new Token(NodeType.Symbol, "}"),
+                new Token(NodeType.Symbol, "}")
+            };
+            classUnderTest = new Grammarian();
+        }
+
+        [TestMethod]
+        public void ShouldResetSubroutineSymbolTable()
+        {
+            classUnderTest
+                .LoadTokens(tokens)
+                .ParseClass()
+                .ShouldGenerateXml(@"
+                    <class>
+                        <keyword>class</keyword>
+                        <identifier kind='class' isDefinition='true'>MyClass</identifier>
+                        <symbol>{</symbol>
+                        <subroutineDec>
+                            <keyword>function</keyword>
+                            <keyword>void</keyword>
+                            <identifier kind='subroutine' isDefinition='true'>doSomething</identifier>
+                            <symbol>(</symbol>
+                            <parameterList>
+                                <keyword>int</keyword>
+                                <identifier kind='argument' number='0' isDefinition='true'>x</identifier>
+                            </parameterList>
+                            <symbol>)</symbol>
+                            <subroutineBody>
+                                <symbol>{</symbol>
+                                <varDec>
+                                    <keyword>var</keyword>
+                                    <keyword>boolean</keyword>
+                                    <identifier kind='var' number='0' isDefinition='true'>hasStarted</identifier>
+                                    <symbol>;</symbol>
+                                </varDec>
+                                <symbol>}</symbol>
+                            </subroutineBody>
+                        </subroutineDec>
+                        <subroutineDec>
+                            <keyword>function</keyword>
+                            <keyword>void</keyword>
+                            <identifier kind='subroutine' isDefinition='true'>doSomethingElse</identifier>
+                            <symbol>(</symbol>
+                            <parameterList>
+                                <keyword>int</keyword>
+                                <identifier kind='argument' number='0' isDefinition='true'>x</identifier>
+                            </parameterList>
+                            <symbol>)</symbol>
+                            <subroutineBody>
+                                <symbol>{</symbol>
+                                <varDec>
+                                    <keyword>var</keyword>
+                                    <keyword>boolean</keyword>
+                                    <identifier kind='var' number='0' isDefinition='true'>hasStarted</identifier>
+                                    <symbol>;</symbol>
+                                </varDec>
+                                <symbol>}</symbol>
+                            </subroutineBody>
+                        </subroutineDec>
+                        <symbol>}</symbol>
+                    </class>
+                ");
+        }
+    }
+
+    #endregion
+
     #region SimpleLetStatementGrammar
 
     [TestClass]
