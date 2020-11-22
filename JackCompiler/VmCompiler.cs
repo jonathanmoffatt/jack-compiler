@@ -22,7 +22,10 @@ namespace JackCompiler
             Expect(children.Dequeue(), NodeType.Keyword, "class");
             string className = Expect(children.Dequeue(), NodeType.Identifier);
             Expect(children.Dequeue(), NodeType.Symbol, "{");
-            ProcessSubroutineDeclaration(children.Dequeue(), className);
+            while (PeekType(children) == NodeType.SubroutineDeclaration)
+            {
+                ProcessSubroutineDeclaration(children.Dequeue(), className);
+            }
             Expect(children.Dequeue(), NodeType.Symbol, "}");
         }
 
@@ -37,21 +40,34 @@ namespace JackCompiler
             Expect(children.Dequeue(), NodeType.Symbol, "(");
             NodeBase parameterList = children.Dequeue();
             Expect(parameterList, NodeType.ParameterList);
-            int parameterCount = ((Node)parameterList).Children.Count();
-            if (isMethod)
-                parameterCount++;
-            vmFile.WriteLine($"function {className}.{name} {parameterCount}");
             Expect(children.Dequeue(), NodeType.Symbol, ")");
-            ProcessSubroutineBody(children.Dequeue());
+            ProcessSubroutineBody(children.Dequeue(), className, name);
         }
 
-        private void ProcessSubroutineBody(NodeBase subroutineBody)
+        private void ProcessSubroutineBody(NodeBase subroutineBody, string className, string name)
         {
             Expect(subroutineBody, NodeType.SubroutineBody);
             Queue<NodeBase> children = GetChildren(subroutineBody);
             Expect(children.Dequeue(), NodeType.Symbol, "{");
+            int numberOfVariableDeclarations = ProcessVariableDeclarations(children);
+            vmFile.WriteLine($"function {className}.{name} {numberOfVariableDeclarations}");
             ProcessStatements(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, "}");
+        }
+
+        private int ProcessVariableDeclarations(Queue<NodeBase> children)
+        {
+            int numberOfVariableDeclarations = 0;
+            while (PeekType(children) == NodeType.VariableDeclaration)
+            {
+                Queue<NodeBase> variableDeclaration = GetChildren(children.Dequeue());
+                numberOfVariableDeclarations++;
+                foreach(var varDecChild in variableDeclaration)
+                {
+                    if (IsSymbol(varDecChild, ",")) numberOfVariableDeclarations++;
+                }
+            }
+            return numberOfVariableDeclarations;
         }
 
         private void ProcessStatements(NodeBase statements)
@@ -73,8 +89,38 @@ namespace JackCompiler
                 case NodeType.ReturnStatement:
                     ProcessReturnStatement(statement);
                     break;
+                case NodeType.LetStatement:
+                    ProcessLetStatement(statement);
+                    break;
+                case NodeType.WhileStatement:
+                    ProcessWhileStatement(statement);
+                    break;
                 default:
-                    throw new NotImplementedException();
+                    throw GenerateNotImplementedException(statement.Type.ToString());
+            }
+        }
+
+        private void ProcessWhileStatement(NodeBase statement)
+        {
+            // START HERE...
+            throw new NotImplementedException();
+        }
+
+        private void ProcessLetStatement(NodeBase statement)
+        {
+            Queue<NodeBase> children = GetChildren(statement);
+            Expect(children.Dequeue(), NodeType.Keyword, "let");
+            Identifier identifier = GetIdentifier(children.Dequeue());
+            switch(identifier.Kind)
+            {
+                case IdentifierKind.Var:
+                    Expect(children.Dequeue(), NodeType.Symbol, "=");
+                    ProcessExpression(children.Dequeue());
+                    Expect(children.Dequeue(), NodeType.Symbol, ";");
+                    vmFile.WriteLine($"pop local {identifier.Number}");
+                    break;
+                default:
+                    throw GenerateNotImplementedException(identifier.Kind.ToString());
             }
         }
 
@@ -82,7 +128,7 @@ namespace JackCompiler
         {
             Queue<NodeBase> children = GetChildren(statement);
             Expect(children.Dequeue(), NodeType.Keyword, "return");
-            var returnValue = children.Dequeue();
+            NodeBase returnValue = children.Dequeue();
             if (IsSymbol(returnValue, ";"))
             {
                 vmFile.WriteLine("push constant 0");
@@ -90,7 +136,7 @@ namespace JackCompiler
             }
             else
             {
-                throw new NotImplementedException();
+                throw GenerateNotImplementedException(GetValue(returnValue));
             }
         }
 
@@ -120,10 +166,12 @@ namespace JackCompiler
         {
             Expect(expressionList, NodeType.ExpressionList);
             Queue<NodeBase> expressions = GetChildren(expressionList);
-            int expressionCount = expressions.Count;
-            foreach (var expression in expressions)
+            int expressionCount = 0;
+            while(expressions.Any())
             {
-                ProcessExpression(expression);
+                ProcessExpression(expressions.Dequeue());
+                expressionCount++;
+                if (PeekValue(expressions) == ",") expressions.Dequeue();
             }
             return expressionCount;
         }
@@ -146,7 +194,7 @@ namespace JackCompiler
                         vmFile.WriteLine("call Math.multiply 2");
                         break;
                     default:
-                        throw new NotImplementedException();
+                        throw GenerateNotImplementedException(op.Value);
                 }
             }
         }
@@ -168,8 +216,54 @@ namespace JackCompiler
                     case NodeType.IntegerConstant:
                         vmFile.WriteLine($"push constant {((Token)firstChild).Value}");
                         break;
+                    case NodeType.Keyword:
+                        string keywordValue = GetValue(firstChild);
+                        switch(keywordValue)
+                        {
+                            case "true":
+                                vmFile.WriteLine("push constant 0");
+                                vmFile.WriteLine("not");
+                                break;
+                            case "false":
+                                vmFile.WriteLine("push constant 0");
+                                break;
+                            default:
+                                throw GenerateNotImplementedException(keywordValue);
+                        }
+                        break;
+                    case NodeType.Symbol:
+                        ProcessTerm(children.Dequeue());
+                        string unaryOp = GetValue(firstChild);
+                        switch (unaryOp)
+                        {
+                            case "-":
+                                vmFile.WriteLine("neg");
+                                break;
+                            default:
+                                throw GenerateNotImplementedException(unaryOp);
+                        }
+                        break;
+                    case NodeType.Identifier:
+                        Identifier identifier = GetIdentifier(firstChild);
+                        switch (identifier.Kind)
+                        {
+                            case IdentifierKind.Class:
+                                Expect(children.Dequeue(), NodeType.Symbol, ".");
+                                Identifier subroutine = GetIdentifier(children.Dequeue());
+                                Expect(children.Dequeue(), NodeType.Symbol, "(");
+                                int expressionCount = ProcessExpressionList(children.Dequeue());
+                                Expect(children.Dequeue(), NodeType.Symbol, ")");
+                                vmFile.WriteLine($"call {identifier.Value}.{subroutine.Value} {expressionCount}");
+                                break;
+                            case IdentifierKind.Var:
+                                vmFile.WriteLine($"push local {identifier.Number}");
+                                break;
+                            default:
+                                throw GenerateNotImplementedException(identifier.Kind.ToString());
+                        }
+                        break;
                     default:
-                        throw new NotImplementedException();
+                        throw GenerateNotImplementedException(firstChild.Type.ToString());
                 }
             }
         }
@@ -182,7 +276,7 @@ namespace JackCompiler
         private Identifier GetIdentifier(NodeBase nodeBase)
         {
             if (!(nodeBase is Identifier))
-                throw new ArgumentException($"expected an identifier, got {nodeBase} instead");
+                throw GenerateException($"expected an identifier, got {nodeBase} instead");
             return (Identifier)nodeBase;
         }
 
@@ -195,7 +289,7 @@ namespace JackCompiler
         {
             Token token = nodeBase as Token;
             if (token == null || token.Type != NodeType.Symbol)
-                throw new ArgumentException($"expected a symbol, got {nodeBase} instead");
+                throw GenerateException($"expected a symbol, got {nodeBase} instead");
             return token;
         }
 
@@ -203,7 +297,7 @@ namespace JackCompiler
         {
             Token token = nodeBase as Token;
             if (token == null || token.Type != NodeType.Keyword)
-                throw new ArgumentException($"expected a keyword, got {nodeBase} instead");
+                throw GenerateException($"expected a keyword, got {nodeBase} instead");
             return token;
         }
 
@@ -211,10 +305,35 @@ namespace JackCompiler
         {
             Token token = nodeBase as Token;
             if (nodeBase.Type != nodeType)
-                throw new ArgumentException($"expected node type to be {nodeType}");
+                throw GenerateException($"expected node type to be {nodeType}, but got {nodeBase.Type}");
             if (value != null && token != null && token.Value != value)
-                throw new ArgumentException($"expected node to have value '{value}'");
+                throw GenerateException($"expected node to have value '{value}', but got {token.Value}");
             return token != null ? token.Value : null;
+        }
+
+        private NodeType? PeekType(Queue<NodeBase> queue)
+        {
+            return queue.Any() ? queue.Peek().Type : (NodeType?)null;
+        }
+
+        private string PeekValue(Queue<NodeBase> queue)
+        {
+            return queue.Any() ? GetValue(queue.Peek()) : null;
+        }
+
+        private string GetValue(NodeBase nodeBase)
+        {
+            return nodeBase is Token ? ((Token)nodeBase).Value : null;
+        }
+
+        private ArgumentException GenerateException(string message)
+        {
+            return new ArgumentException($"{message}. VM generated so far:\n{vmFile}");
+        }
+
+        private NotImplementedException GenerateNotImplementedException(string missing)
+        {
+            return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{vmFile}");
         }
     }
 }
