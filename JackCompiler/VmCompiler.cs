@@ -7,11 +7,11 @@ namespace JackCompiler
 {
     public class VmCompiler
     {
-        private TextWriter vmFile;
+        private IVmWriter vmWriter;
 
-        public void Compile(Node tree, TextWriter vmFile)
+        public void Compile(Node tree, IVmWriter vmWriter)
         {
-            this.vmFile = vmFile;
+            this.vmWriter = vmWriter;
             ProcessClass(tree);
         }
 
@@ -50,7 +50,7 @@ namespace JackCompiler
             Queue<NodeBase> children = GetChildren(subroutineBody);
             Expect(children.Dequeue(), NodeType.Symbol, "{");
             int numberOfVariableDeclarations = ProcessVariableDeclarations(children);
-            vmFile.WriteLine($"function {className}.{name} {numberOfVariableDeclarations}");
+            vmWriter.Function(className, name, numberOfVariableDeclarations);
             ProcessStatements(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, "}");
         }
@@ -102,7 +102,7 @@ namespace JackCompiler
 
         private void ProcessWhileStatement(NodeBase statement)
         {
-            // START HERE...
+            // START HERE... move vm writing stuff into a VmWriter class
             throw new NotImplementedException();
         }
 
@@ -117,7 +117,7 @@ namespace JackCompiler
                     Expect(children.Dequeue(), NodeType.Symbol, "=");
                     ProcessExpression(children.Dequeue());
                     Expect(children.Dequeue(), NodeType.Symbol, ";");
-                    vmFile.WriteLine($"pop local {identifier.Number}");
+                    vmWriter.Pop(identifier);
                     break;
                 default:
                     throw GenerateNotImplementedException(identifier.Kind.ToString());
@@ -131,8 +131,7 @@ namespace JackCompiler
             NodeBase returnValue = children.Dequeue();
             if (IsSymbol(returnValue, ";"))
             {
-                vmFile.WriteLine("push constant 0");
-                vmFile.WriteLine("return");
+                vmWriter.Return();
             }
             else
             {
@@ -157,9 +156,7 @@ namespace JackCompiler
             int expressionCount = ProcessExpressionList(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, ";");
-
-            vmFile.WriteLine($"call {call} {expressionCount}");
-            vmFile.WriteLine("pop temp 0");
+            vmWriter.Call(call, expressionCount);
         }
 
         private int ProcessExpressionList(NodeBase expressionList)
@@ -185,17 +182,7 @@ namespace JackCompiler
             {
                 Token op = GetSymbol(children.Dequeue());
                 ProcessTerm(children.Dequeue());
-                switch (op.Value)
-                {
-                    case "+":
-                        vmFile.WriteLine("add");
-                        break;
-                    case "*":
-                        vmFile.WriteLine("call Math.multiply 2");
-                        break;
-                    default:
-                        throw GenerateNotImplementedException(op.Value);
-                }
+                vmWriter.Arithmetic(op.Value);
             }
         }
 
@@ -214,18 +201,17 @@ namespace JackCompiler
                 switch(firstChild.Type)
                 {
                     case NodeType.IntegerConstant:
-                        vmFile.WriteLine($"push constant {((Token)firstChild).Value}");
+                        vmWriter.PushConstant(GetValue(firstChild));
                         break;
                     case NodeType.Keyword:
                         string keywordValue = GetValue(firstChild);
                         switch(keywordValue)
                         {
                             case "true":
-                                vmFile.WriteLine("push constant 0");
-                                vmFile.WriteLine("not");
+                                vmWriter.PushTrue();
                                 break;
                             case "false":
-                                vmFile.WriteLine("push constant 0");
+                                vmWriter.PushFalse();
                                 break;
                             default:
                                 throw GenerateNotImplementedException(keywordValue);
@@ -237,7 +223,7 @@ namespace JackCompiler
                         switch (unaryOp)
                         {
                             case "-":
-                                vmFile.WriteLine("neg");
+                                vmWriter.Arithmetic("neg");
                                 break;
                             default:
                                 throw GenerateNotImplementedException(unaryOp);
@@ -253,10 +239,10 @@ namespace JackCompiler
                                 Expect(children.Dequeue(), NodeType.Symbol, "(");
                                 int expressionCount = ProcessExpressionList(children.Dequeue());
                                 Expect(children.Dequeue(), NodeType.Symbol, ")");
-                                vmFile.WriteLine($"call {identifier.Value}.{subroutine.Value} {expressionCount}");
+                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount);
                                 break;
                             case IdentifierKind.Var:
-                                vmFile.WriteLine($"push local {identifier.Number}");
+                                vmWriter.Push(identifier);
                                 break;
                             default:
                                 throw GenerateNotImplementedException(identifier.Kind.ToString());
@@ -328,12 +314,12 @@ namespace JackCompiler
 
         private ArgumentException GenerateException(string message)
         {
-            return new ArgumentException($"{message}. VM generated so far:\n{vmFile}");
+            return new ArgumentException($"{message}. VM generated so far:\n{vmWriter}");
         }
 
         private NotImplementedException GenerateNotImplementedException(string missing)
         {
-            return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{vmFile}");
+            return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{vmWriter}");
         }
     }
 }

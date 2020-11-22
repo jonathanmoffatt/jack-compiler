@@ -38,7 +38,7 @@ namespace JackCompiler
 
                 using (var vmFile = new StreamWriter(GetOutputFileName(sourceFile, "", "vm")))
                 {
-                    vmCompiler.Compile(parser.Tree, vmFile);
+                    vmCompiler.Compile(parser.Tree, new VmWriter(vmFile));
                 }
             }
         }

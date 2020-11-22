@@ -12,12 +12,13 @@ namespace JackCompiler.Tests
             using (var tokeniser = new Tokeniser(jackCode))
             {
                 var output = new StringWriter();
+                var writer = new VmWriter(output);
                 var parser = new Parser(new Grammarian());
                 parser.Parse(tokeniser);
                 var xmlConverter = new XmlConverter();
                 Console.WriteLine(xmlConverter.ConvertNode(parser.Tree).OuterXml);
-                vmCompiler.Compile(parser.Tree, output);
-                return output.ToString();
+                vmCompiler.Compile(parser.Tree, writer);
+                return writer.ToString();
             }
 
         }
