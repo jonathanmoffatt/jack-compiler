@@ -6,7 +6,8 @@ namespace JackCompiler
     public class VmWriter : IVmWriter
     {
         private TextWriter writer;
-        private int whileLoopNumber = 0;
+        private int whileLoopNumber;
+        private int ifStatementNumber;
 
         public VmWriter(TextWriter writer)
         {
@@ -15,6 +16,8 @@ namespace JackCompiler
 
         public void Function(string className, string name, int numberOfVariableDeclarations)
         {
+            whileLoopNumber = 0;
+            ifStatementNumber = 0;
             writer.WriteLine($"function {className}.{name} {numberOfVariableDeclarations}");
         }
 
@@ -60,15 +63,24 @@ namespace JackCompiler
             }
         }
 
-        public void Return()
+        public void ReturnNothing()
         {
             writer.WriteLine("push constant 0");
+            writer.WriteLine("return");
+        }
+
+        public void Return()
+        {
             writer.WriteLine("return");
         }
 
         public void Call(string call, int expressionCount)
         {
             writer.WriteLine($"call {call} {expressionCount}");
+        }
+
+        public void DiscardCallResult()
+        {
             writer.WriteLine("pop temp 0");
         }
 
@@ -79,11 +91,38 @@ namespace JackCompiler
                 case "+":
                     writer.WriteLine("add");
                     break;
+                case "-":
+                    writer.WriteLine("sub");
+                    break;
                 case "*":
                     writer.WriteLine("call Math.multiply 2");
                     break;
-                case "neg":
+                case ">":
+                    writer.WriteLine("gt");
+                    break;
+                case "<":
+                    writer.WriteLine("lt");
+                    break;
+                case "&":
+                    writer.WriteLine("and");
+                    break;
+                case "=":
+                    writer.WriteLine("eq");
+                    break;
+                default:
+                    throw GenerateNotImplementedException(op);
+            }
+        }
+
+        public void Unary(string op)
+        {
+            switch (op)
+            {
+                case "-":
                     writer.WriteLine("neg");
+                    break;
+                case "~":
+                    writer.WriteLine("not");
                     break;
                 default:
                     throw GenerateNotImplementedException(op);
@@ -116,7 +155,7 @@ namespace JackCompiler
             return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{writer}");
         }
 
-        public int GetWhileLoopNumber()
+        public int GetWhileStatementNumber()
         {
             return whileLoopNumber++;
         }
@@ -132,10 +171,33 @@ namespace JackCompiler
             writer.WriteLine($"if-goto WHILE_END{whileLoopNumber}");
         }
 
-        public void WhileFinish(int whileLoopNumber)
+        public void WhileEnd(int whileLoopNumber)
         {
             writer.WriteLine($"goto WHILE_EXP{whileLoopNumber}");
             writer.WriteLine($"label WHILE_END{whileLoopNumber}");
+        }
+
+        public int GetIfStatementNumber()
+        {
+            return ifStatementNumber++;
+        }
+
+        public void IfStart(int ifStatementNumber)
+        {
+            writer.WriteLine($"if-goto IF_TRUE{ifStatementNumber}");
+            writer.WriteLine($"goto IF_FALSE{ifStatementNumber}");
+            writer.WriteLine($"label IF_TRUE{ifStatementNumber}");
+        }
+
+        public void IfElse(int ifStatementNumber)
+        {
+            writer.WriteLine($"goto IF_END{ifStatementNumber}");
+            writer.WriteLine($"label IF_FALSE{ifStatementNumber}");
+        }
+
+        public void IfEnd(int ifStatementNumber)
+        {
+            writer.WriteLine($"label IF_END{ifStatementNumber}");
         }
     }
 }

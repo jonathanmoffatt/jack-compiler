@@ -95,9 +95,40 @@ namespace JackCompiler
                 case NodeType.WhileStatement:
                     ProcessWhileStatement(statement);
                     break;
+                case NodeType.IfStatement:
+                    ProcessIfStatement(statement);
+                    break;
                 default:
                     throw GenerateNotImplementedException(statement.Type.ToString());
             }
+        }
+
+        private void ProcessIfStatement(NodeBase statement)
+        {
+            Queue<NodeBase> children = GetChildren(statement);
+            Expect(children.Dequeue(), NodeType.Keyword, "if");
+            Expect(children.Dequeue(), NodeType.Symbol, "(");
+
+            ProcessExpression(children.Dequeue());
+            int ifStatementNumber = vmWriter.GetIfStatementNumber();
+            vmWriter.IfStart(ifStatementNumber);
+
+            Expect(children.Dequeue(), NodeType.Symbol, ")");
+            Expect(children.Dequeue(), NodeType.Symbol, "{");
+
+            ProcessStatements(children.Dequeue());
+
+            Expect(children.Dequeue(), NodeType.Symbol, "}");
+            vmWriter.IfElse(ifStatementNumber);
+
+            if (PeekType(children) == NodeType.Keyword && PeekValue(children) == "else")
+            {
+                Expect(children.Dequeue(), NodeType.Keyword, "else");
+                Expect(children.Dequeue(), NodeType.Symbol, "{");
+                ProcessStatements(children.Dequeue());
+                Expect(children.Dequeue(), NodeType.Symbol, "}");
+            }
+            vmWriter.IfEnd(ifStatementNumber);
         }
 
         private void ProcessWhileStatement(NodeBase statement)
@@ -106,10 +137,10 @@ namespace JackCompiler
             Expect(children.Dequeue(), NodeType.Keyword, "while");
             Expect(children.Dequeue(), NodeType.Symbol, "(");
 
-            int whileLoopNumber = vmWriter.GetWhileLoopNumber();
-            vmWriter.WhileStart(whileLoopNumber);
+            int whileStatementNumber = vmWriter.GetWhileStatementNumber();
+            vmWriter.WhileStart(whileStatementNumber);
             ProcessExpression(children.Dequeue());
-            vmWriter.WhileBreak(whileLoopNumber);
+            vmWriter.WhileBreak(whileStatementNumber);
 
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, "{");
@@ -117,10 +148,7 @@ namespace JackCompiler
             ProcessStatements(children.Dequeue());
 
             Expect(children.Dequeue(), NodeType.Symbol, "}");
-            vmWriter.WhileFinish(whileLoopNumber);
-
-            // START HERE... move vm writing stuff into a VmWriter class
-            throw new NotImplementedException();
+            vmWriter.WhileEnd(whileStatementNumber);
         }
 
         private void ProcessLetStatement(NodeBase statement)
@@ -131,6 +159,7 @@ namespace JackCompiler
             switch(identifier.Kind)
             {
                 case IdentifierKind.Var:
+                case IdentifierKind.Argument:
                     Expect(children.Dequeue(), NodeType.Symbol, "=");
                     ProcessExpression(children.Dequeue());
                     Expect(children.Dequeue(), NodeType.Symbol, ";");
@@ -145,15 +174,16 @@ namespace JackCompiler
         {
             Queue<NodeBase> children = GetChildren(statement);
             Expect(children.Dequeue(), NodeType.Keyword, "return");
-            NodeBase returnValue = children.Dequeue();
-            if (IsSymbol(returnValue, ";"))
+            if (PeekType(children) == NodeType.Expression)
             {
+                ProcessExpression(children.Dequeue());
                 vmWriter.Return();
             }
             else
             {
-                throw GenerateNotImplementedException(GetValue(returnValue));
+                vmWriter.ReturnNothing();
             }
+            Expect(children.Dequeue(), NodeType.Symbol, ";");
         }
 
         private void ProcessDoStatement(NodeBase statement)
@@ -174,6 +204,7 @@ namespace JackCompiler
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, ";");
             vmWriter.Call(call, expressionCount);
+            vmWriter.DiscardCallResult();
         }
 
         private int ProcessExpressionList(NodeBase expressionList)
@@ -237,14 +268,7 @@ namespace JackCompiler
                     case NodeType.Symbol:
                         ProcessTerm(children.Dequeue());
                         string unaryOp = GetValue(firstChild);
-                        switch (unaryOp)
-                        {
-                            case "-":
-                                vmWriter.Arithmetic("neg");
-                                break;
-                            default:
-                                throw GenerateNotImplementedException(unaryOp);
-                        }
+                        vmWriter.Unary(unaryOp);
                         break;
                     case NodeType.Identifier:
                         Identifier identifier = GetIdentifier(firstChild);
@@ -259,6 +283,7 @@ namespace JackCompiler
                                 vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount);
                                 break;
                             case IdentifierKind.Var:
+                            case IdentifierKind.Argument:
                                 vmWriter.Push(identifier);
                                 break;
                             default:

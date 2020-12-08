@@ -10,10 +10,17 @@
         void PushConstant(string constant);
         void PushFalse();
         void PushTrue();
-        void Return();
-        int GetWhileLoopNumber();
+        void ReturnNothing();
+        int GetWhileStatementNumber();
         void WhileStart(int whileLoopNumber);
         void WhileBreak(int whileLoopNumber);
-        void WhileFinish(int whileLoopNumber);
+        void WhileEnd(int whileLoopNumber);
+        int GetIfStatementNumber();
+        void IfStart(int ifStatementNumber);
+        void IfElse(int ifStatementNumber);
+        void IfEnd(int ifStatementNumber);
+        void Unary(string op);
+        void Return();
+        void DiscardCallResult();
     }
 }
