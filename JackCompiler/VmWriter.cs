@@ -6,6 +6,7 @@ namespace JackCompiler
     public class VmWriter : IVmWriter
     {
         private TextWriter writer;
+        private int whileLoopNumber = 0;
 
         public VmWriter(TextWriter writer)
         {
@@ -113,6 +114,28 @@ namespace JackCompiler
         private NotImplementedException GenerateNotImplementedException(string missing)
         {
             return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{writer}");
+        }
+
+        public int GetWhileLoopNumber()
+        {
+            return whileLoopNumber++;
+        }
+
+        public void WhileStart(int whileLoopNumber)
+        {
+            writer.WriteLine($"label WHILE_EXP{whileLoopNumber}");
+        }
+
+        public void WhileBreak(int whileLoopNumber)
+        {
+            writer.WriteLine("not");
+            writer.WriteLine($"if-goto WHILE_END{whileLoopNumber}");
+        }
+
+        public void WhileFinish(int whileLoopNumber)
+        {
+            writer.WriteLine($"goto WHILE_EXP{whileLoopNumber}");
+            writer.WriteLine($"label WHILE_END{whileLoopNumber}");
         }
     }
 }

@@ -102,6 +102,23 @@ namespace JackCompiler
 
         private void ProcessWhileStatement(NodeBase statement)
         {
+            Queue<NodeBase> children = GetChildren(statement);
+            Expect(children.Dequeue(), NodeType.Keyword, "while");
+            Expect(children.Dequeue(), NodeType.Symbol, "(");
+
+            int whileLoopNumber = vmWriter.GetWhileLoopNumber();
+            vmWriter.WhileStart(whileLoopNumber);
+            ProcessExpression(children.Dequeue());
+            vmWriter.WhileBreak(whileLoopNumber);
+
+            Expect(children.Dequeue(), NodeType.Symbol, ")");
+            Expect(children.Dequeue(), NodeType.Symbol, "{");
+
+            ProcessStatements(children.Dequeue());
+
+            Expect(children.Dequeue(), NodeType.Symbol, "}");
+            vmWriter.WhileFinish(whileLoopNumber);
+
             // START HERE... move vm writing stuff into a VmWriter class
             throw new NotImplementedException();
         }

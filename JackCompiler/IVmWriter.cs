@@ -11,5 +11,9 @@
         void PushFalse();
         void PushTrue();
         void Return();
+        int GetWhileLoopNumber();
+        void WhileStart(int whileLoopNumber);
+        void WhileBreak(int whileLoopNumber);
+        void WhileFinish(int whileLoopNumber);
     }
 }
