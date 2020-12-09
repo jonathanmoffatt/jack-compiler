@@ -35,19 +35,19 @@ namespace JackCompiler
             subroutineSymbols = new List<SymbolLookup>();
         }
 
-        public SymbolLookup Add(string name, IdentifierKind kind)
+        public SymbolLookup Add(string name, IdentifierKind kind, string classType)
         {
             SymbolLookup symbol = null;
             if (IsFieldOrStatic(kind))
             {
                 int number = classSymbols.Count(s => s.Kind == kind);
-                symbol = new SymbolLookup { Name = name, Kind = kind, Number = number };
+                symbol = new SymbolLookup { Name = name, Kind = kind, Number = number, ClassType = classType };
                 classSymbols.Add(symbol);
             }
             if (IsArgumentOrVar(kind))
             {
                 int number = subroutineSymbols.Count(s => s.Kind == kind);
-                symbol = new SymbolLookup { Name = name, Kind = kind, Number = number };
+                symbol = new SymbolLookup { Name = name, Kind = kind, Number = number, ClassType = classType };
                 subroutineSymbols.Add(symbol);
             }
             return symbol;
@@ -65,6 +65,7 @@ namespace JackCompiler
         public string Name { get; set; }
         public IdentifierKind Kind { get; set; }
         public int Number { get; set; }
+        public string ClassType { get; set; }
     }
 
 

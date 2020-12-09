@@ -74,8 +74,13 @@ namespace JackCompiler
             writer.WriteLine("return");
         }
 
-        public void Call(string call, int expressionCount)
+        public void Call(string call, int expressionCount, bool isClassStaticMemberCall)
         {
+            if (isClassStaticMemberCall)
+            {
+                expressionCount++;
+                writer.WriteLine("push local 0");
+            }
             writer.WriteLine($"call {call} {expressionCount}");
         }
 

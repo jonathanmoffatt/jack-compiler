@@ -38,6 +38,7 @@ namespace JackCompiler
                 el.SetAttribute("kind", id.Kind.ToString().ToLower());
                 if (id.Number.HasValue) el.SetAttribute("number", id.Number.ToString());
                 el.SetAttribute("isDefinition", id.IsDefinition.ToString().ToLower());
+                if (id.ClassType != null) el.SetAttribute("classType", id.ClassType);
             }
             if (nodeBase is Node)
             {

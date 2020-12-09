@@ -193,17 +193,19 @@ namespace JackCompiler
             var identifier = GetIdentifier(children.Dequeue());
             string call = identifier.Value;
             Token token = GetSymbol(children.Dequeue());
+            bool isMethodCall = false;
             if (token.Value == ".")
             {
-                var identifier2 = GetIdentifier(children.Dequeue());
-                call = $"{call}.{identifier2.Value}";
+                isMethodCall = identifier.ClassType != null;
+                var classMemberIdentifier = GetIdentifier(children.Dequeue());
+                call = $"{(isMethodCall ? identifier.ClassType : identifier.Value)}.{classMemberIdentifier.Value}";
                 token = GetSymbol(children.Dequeue());
             }
             Expect(token, NodeType.Symbol, "(");
             int expressionCount = ProcessExpressionList(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, ";");
-            vmWriter.Call(call, expressionCount);
+            vmWriter.Call(call, expressionCount, isMethodCall);
             vmWriter.DiscardCallResult();
         }
 
@@ -280,7 +282,7 @@ namespace JackCompiler
                                 Expect(children.Dequeue(), NodeType.Symbol, "(");
                                 int expressionCount = ProcessExpressionList(children.Dequeue());
                                 Expect(children.Dequeue(), NodeType.Symbol, ")");
-                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount);
+                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount, false);
                                 break;
                             case IdentifierKind.Var:
                             case IdentifierKind.Argument:

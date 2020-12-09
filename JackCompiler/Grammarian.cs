@@ -22,16 +22,16 @@ namespace JackCompiler
             return this;
         }
 
-        public void AddToSymbolTable(string name, IdentifierKind kind)
+        public void AddToSymbolTable(string name, IdentifierKind kind, string classType)
         {
-            symbolTable.Add(name, kind);
+            symbolTable.Add(name, kind, classType);
         }
 
         public Node ParseClass()
         {
             Node root = new Node(NodeType.Class);
             root.AddChild(Dequeue());
-            DequeueIdentifierDeclaration(root, IdentifierKind.Class, "class expected a className identifier");
+            DequeueIdentifierDeclaration(root, IdentifierKind.Class, null, "class expected a className identifier");
             DequeueSymbol(root, "{");
             while (Peek() == "static" || Peek() == "field")
             {
@@ -50,11 +50,11 @@ namespace JackCompiler
             var cvd = new Node(NodeType.ClassVariableDeclaration);
             IdentifierKind kind = Peek() == "static" ? IdentifierKind.Static : IdentifierKind.Field;
             DequeueKeyword(cvd);
-            DequeueType(cvd);
+            string className = DequeueType(cvd);
             bool another;
             do
             {
-                DequeueIdentifierDeclaration(cvd, kind, "class static or field declaration expected a variable name");
+                DequeueIdentifierDeclaration(cvd, kind, className, "class static or field declaration expected a variable name");
                 another = Peek() == ",";
                 if (another) cvd.AddChild(tokens.Dequeue());
             } while (another);
@@ -67,8 +67,8 @@ namespace JackCompiler
             symbolTable.ResetSubroutineTable();
             var sd = new Node(NodeType.SubroutineDeclaration);
             DequeueKeyword(sd);
-            DequeueType(sd);
-            DequeueIdentifierDeclaration(sd, IdentifierKind.Subroutine, "expected subroutine name");
+            string className = DequeueType(sd);
+            DequeueIdentifierDeclaration(sd, IdentifierKind.Subroutine, className, "expected subroutine name");
             DequeueSymbol(sd, "(");
             sd.AddChild(ParseParameterList());
             DequeueSymbol(sd, ")");
@@ -158,8 +158,8 @@ namespace JackCompiler
             bool another = Peek() != ")";
             while (another)
             {
-                DequeueType(pl);
-                DequeueIdentifierDeclaration(pl, IdentifierKind.Argument, "expected parameter list identifier");
+                string className = DequeueType(pl);
+                DequeueIdentifierDeclaration(pl, IdentifierKind.Argument, className, "expected parameter list identifier");
                 another = Peek() == ",";
                 if (another) DequeueSymbol(pl, ",");
             };
@@ -183,11 +183,11 @@ namespace JackCompiler
             {
                 var variables = new Node(NodeType.VariableDeclaration);
                 DequeueKeyword(variables);
-                DequeueType(variables);
+                string className = DequeueType(variables);
                 bool more;
                 do
                 {
-                    DequeueIdentifierDeclaration(variables, IdentifierKind.Var, "variable declarations expected an identifier");
+                    DequeueIdentifierDeclaration(variables, IdentifierKind.Var, className, "variable declarations expected an identifier");
                     more = Peek() == ",";
                     if (more) DequeueSymbol(variables, ",");
                 } while (more);
@@ -281,11 +281,23 @@ namespace JackCompiler
             return expressionList;
         }
 
-        private void DequeueType(Node parent)
+        private string DequeueType(Node parent)
         {
             Token type = Dequeue();
             if (type != null)
-                parent.AddChild(type.Type == NodeType.Identifier ? new Identifier(type.Value, IdentifierKind.Class, false) : type);
+            {
+                if (type.Type == NodeType.Identifier)
+                {
+                    // type is the name of a class
+                    parent.AddChild(new Identifier(type.Value, IdentifierKind.Class, false));
+                    return type.Value;
+                }
+                else
+                {
+                    parent.AddChild(type);
+                    return null;
+                }
+            }
             else
                 throw new ApplicationException("class variable definition expected a type, reached end of file instead");
         }
@@ -298,7 +310,7 @@ namespace JackCompiler
             parent.AddChild(keyword);
         }
 
-        private void DequeueIdentifierDeclaration(Node parent, IdentifierKind kind, string error)
+        private void DequeueIdentifierDeclaration(Node parent, IdentifierKind kind, string classType, string error)
         {
             Token token = Dequeue();
             if (token?.Type == NodeType.Identifier)
@@ -310,7 +322,7 @@ namespace JackCompiler
                 }
                 else
                 {
-                    SymbolLookup symbolLookup = symbolTable.Add(token.Value, kind);
+                    SymbolLookup symbolLookup = symbolTable.Add(token.Value, kind, classType);
                     if (symbolLookup != null)
                     {
                         identifier = new Identifier(symbolLookup.Name, symbolLookup.Kind, true, symbolLookup.Number);
@@ -320,6 +332,7 @@ namespace JackCompiler
                         identifier = new Identifier(token.Value, IdentifierKind.Subroutine, true);
                     }
                 }
+                identifier.ClassType = classType;
                 parent.AddChild(identifier);
                 if (Peek() == "[")
                 {
@@ -349,6 +362,7 @@ namespace JackCompiler
                 else
                 {
                     identifier = new Identifier(lookup.Name, lookup.Kind, false, lookup.Number);
+                    identifier.ClassType = lookup.ClassType;
                 }
                 parent.AddChild(identifier);
                 if (Peek() == "[")

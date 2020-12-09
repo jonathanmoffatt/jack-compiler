@@ -62,6 +62,16 @@ namespace JackCompiler.Tests
             var identifier = new Identifier("x", IdentifierKind.Argument, false);
             classUnderTest.ConvertTokens(identifier).Should().BeEquivalentTo(doc);
         }
+
+        [TestMethod]
+        public void IncludesClassNameInTheXml()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<tokens><identifier kind='argument' number='3' isDefinition='true' classType='HorizontalLocation'>x</identifier></tokens>");
+            var identifier = new Identifier("x", IdentifierKind.Argument, true, 3);
+            identifier.ClassType = "HorizontalLocation";
+            classUnderTest.ConvertTokens(identifier).Should().BeEquivalentTo(doc);
+        }
     }
 
     #endregion

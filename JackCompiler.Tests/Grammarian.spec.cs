@@ -227,7 +227,7 @@ namespace JackCompiler.Tests
                         <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                         <symbol>,</symbol>
                         <identifier kind='class' isDefinition='false'>Game</identifier>
-                        <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
+                        <identifier kind='argument' isDefinition='true' number='1' classType='Game'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -255,7 +255,7 @@ namespace JackCompiler.Tests
                       <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                       <symbol>,</symbol>
                       <identifier kind='class' isDefinition='false'>Game</identifier>
-                      <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
+                      <identifier kind='argument' isDefinition='true' number='1' classType='Game'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -283,7 +283,7 @@ namespace JackCompiler.Tests
                       <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                       <symbol>,</symbol>
                       <identifier kind='class' isDefinition='false'>Game</identifier>
-                      <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
+                      <identifier kind='argument' isDefinition='true' number='1' classType='Game'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
@@ -311,7 +311,7 @@ namespace JackCompiler.Tests
                           <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
                           <symbol>,</symbol>
                           <identifier kind='class' isDefinition='false'>Game</identifier>
-                          <identifier kind='argument' isDefinition='true' number='1'>game</identifier>
+                          <identifier kind='argument' isDefinition='true' number='1' classType='Game'>game</identifier>
                         </parameterList>
                         <symbol>)</symbol>
                         <subroutineBody>
@@ -327,7 +327,7 @@ namespace JackCompiler.Tests
                           <varDec>
                             <keyword>var</keyword>
                             <identifier kind='class' isDefinition='false'>Player</identifier>
-                            <identifier kind='var' isDefinition='true' number='2'>player</identifier>
+                            <identifier kind='var' isDefinition='true' number='2' classType='Player'>player</identifier>
                             <symbol>;</symbol>
                           </varDec>
                           <symbol>}</symbol>
@@ -467,7 +467,7 @@ namespace JackCompiler.Tests
                 new Token(NodeType.IntegerConstant, "1234"),
                 new Token(NodeType.Symbol, ";")
             );
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var, null);
         }
 
         [TestMethod]
@@ -520,9 +520,9 @@ namespace JackCompiler.Tests
         [TestMethod]
         public void RecognisesLetStatementWithMoreComplexExpression()
         {
-            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var);
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Field);
-            classUnderTest.AddToSymbolTable("finished", IdentifierKind.Field);
+            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var, null);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Field, null);
+            classUnderTest.AddToSymbolTable("finished", IdentifierKind.Field, null);
             classUnderTest.ParseLetStatement()
                 .ShouldGenerateXml(@"
                             <letStatement>
@@ -590,7 +590,7 @@ namespace JackCompiler.Tests
         public void ShouldParseCorrectlyWithReturnExpression()
         {
             classUnderTest.LoadTokens(t1, t2, t3);
-            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var, "ResultClass");
             classUnderTest
                 .ParseReturnStatement()
                 .ShouldGenerateXml(@"
@@ -598,7 +598,7 @@ namespace JackCompiler.Tests
                         <keyword>return</keyword>
                         <expression>
                             <term>
-                                <identifier kind='var' isDefinition='false' number='0'>result</identifier>
+                                <identifier kind='var' isDefinition='false' number='0' classType='ResultClass'>result</identifier>
                             </term>
                         </expression>
                         <symbol>;</symbol>
@@ -647,7 +647,7 @@ namespace JackCompiler.Tests
         public void ParsesCorrectlyWithoutAnElseBlock()
         {
             classUnderTest.LoadTokens(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14);
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static, null);
             classUnderTest.ParseIfStatement().ShouldGenerateXml(@"
                 <ifStatement>
                   <keyword>if</keyword>
@@ -688,8 +688,8 @@ namespace JackCompiler.Tests
         public void ParsesCorrectlyWithAnElseBlock()
         {
             classUnderTest.LoadTokens(t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16, t17, t18, t19, t20);
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static);
-            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Static, null);
+            classUnderTest.AddToSymbolTable("result", IdentifierKind.Var, "ResultClass");
             classUnderTest.ParseIfStatement().ShouldGenerateXml(@"
                 <ifStatement>
                   <keyword>if</keyword>
@@ -729,7 +729,7 @@ namespace JackCompiler.Tests
                         <keyword>return</keyword>
                         <expression>
                             <term>
-                                <identifier kind='var' isDefinition='false' number='0'>result</identifier>
+                                <identifier kind='var' isDefinition='false' number='0' classType='ResultClass'>result</identifier>
                             </term>
                         </expression>
                         <symbol>;</symbol>
@@ -767,9 +767,9 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ";"),
                 new Token(NodeType.Symbol, "}")
             );
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
-            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var);
-            classUnderTest.AddToSymbolTable("inProgress", IdentifierKind.Field);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var, null);
+            classUnderTest.AddToSymbolTable("y", IdentifierKind.Var, null);
+            classUnderTest.AddToSymbolTable("inProgress", IdentifierKind.Field, null);
         }
 
         [TestMethod]
@@ -924,7 +924,7 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ")"),
                 new Token(NodeType.Symbol, ";")
             );
-            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var);
+            classUnderTest.AddToSymbolTable("x", IdentifierKind.Var, null);
         }
 
         [TestMethod]
@@ -976,7 +976,8 @@ namespace JackCompiler.Tests
                 new Token(NodeType.Symbol, ")"),
                 new Token(NodeType.Symbol, ";")
             );
-            classUnderTest.AddToSymbolTable("blah", IdentifierKind.Argument);
+            classUnderTest.AddToSymbolTable("blah", IdentifierKind.Argument, null);
+            classUnderTest.AddToSymbolTable("myClass", IdentifierKind.Field, "MyClass");
         }
 
         [TestMethod]
@@ -985,7 +986,7 @@ namespace JackCompiler.Tests
             classUnderTest.ParseDoStatement().ShouldGenerateXml(@"
                 <doStatement>
                     <keyword>do</keyword>
-                    <identifier kind='class' isDefinition='false'>myClass</identifier>
+                    <identifier kind='field' isDefinition='false' number='0' classType='MyClass'>myClass</identifier>
                     <symbol>.</symbol>
                     <identifier kind='subroutine' isDefinition='false'>something</identifier>
                     <symbol>(</symbol>
