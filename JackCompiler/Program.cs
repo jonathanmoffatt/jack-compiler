@@ -36,10 +36,12 @@ namespace JackCompiler
                 SaveXml(sourceFile, xmlConverter.ConvertTokens(parser.Tokens), true);
                 SaveXml(sourceFile, xmlConverter.ConvertNode(parser.Tree), false);
 
-                using (var vmFile = new StreamWriter(GetOutputFileName(sourceFile, "", "vm")))
+                string vmFilePath = GetOutputFileName(sourceFile, "", "vm");
+                using (var vmFile = new StreamWriter(vmFilePath))
                 {
                     vmCompiler.Compile(parser.Tree, new VmWriter(vmFile));
                 }
+                Console.WriteLine($"... vm file written to {Path.GetFileName(vmFilePath)}");
             }
         }
 

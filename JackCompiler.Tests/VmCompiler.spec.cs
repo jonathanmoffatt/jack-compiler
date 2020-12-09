@@ -71,7 +71,7 @@ return
         }
 
         [TestMethod]
-        public void WritesToTheProvidedStream()
+        public void GeneratesTheCorrectVmCode()
         {
             classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
         }
@@ -306,12 +306,70 @@ return
         }
 
         [TestMethod]
-        public void WritesToTheProvidedStream()
+        public void GeneratesTheCorrectVmCode()
         {
             classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
         }
     }
 
     #endregion
+
+    #region WhenCompilingSquare_Main
+
+    [TestClass]
+    public class WhenCompilingSquare_Main
+    {
+        private VmCompiler classUnderTest;
+
+        const string jackInput = @"
+// This file is part of www.nand2tetris.org
+// and the book ""The Elements of Computing Systems""
+// by Nisan and Schocken, MIT Press.
+// File name: projects/11/Square/Main.jack
+
+// (same as projects/09/Square/Main.jack)
+
+/** Initializes a new Square Dance game and starts running it. */
+class Main
+        {
+            function void main()
+            {
+                var SquareGame game;
+                let game = SquareGame.new();
+                do game.run();
+        do game.dispose();
+        return;
+            }
+        }
+;
+";
+        const string vmOutput = @"function Main.main 1
+call SquareGame.new 0
+pop local 0
+push local 0
+call SquareGame.run 1
+pop temp 0
+push local 0
+call SquareGame.dispose 1
+pop temp 0
+push constant 0
+return
+";
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new VmCompiler();
+        }
+
+        [TestMethod]
+        public void GeneratesTheCorrectVmCode()
+        {
+            classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
+        }
+    }
+
+    #endregion
+
 
 }
