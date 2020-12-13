@@ -654,5 +654,445 @@ return
 
     #endregion
 
+    #region WhenCompilingSquare_Square
+
+    [TestClass]
+    public class WhenCompilingSquare_Square
+    {
+        private VmCompiler classUnderTest;
+
+        const string jackInput = @"
+// This file is part of www.nand2tetris.org
+// and the book ""The Elements of Computing Systems""
+// by Nisan and Schocken, MIT Press.
+// File name: projects/11/Square/Square.jack
+
+// (same as projects/09/Square/Square.jack)
+
+/** Implements a graphical square. */
+class Square {
+
+   field int x, y; // screen location of the square's top-left corner
+   field int size; // length of this square, in pixels
+
+   /** Constructs a new square with a given location and size. */
+   constructor Square new(int Ax, int Ay, int Asize) {
+      let x = Ax;
+      let y = Ay;
+      let size = Asize;
+      do draw();
+      return this;
+   }
+
+   /** Disposes this square. */
+   method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+   }
+
+   /** Draws the square on the screen. */
+   method void draw() {
+      do Screen.setColor(true);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+   /** Erases the square from the screen. */
+   method void erase() {
+      do Screen.setColor(false);
+      do Screen.drawRectangle(x, y, x + size, y + size);
+      return;
+   }
+
+    /** Increments the square size by 2 pixels. */
+   method void incSize() {
+      if (((y + size) < 254) & ((x + size) < 510)) {
+         do erase();
+         let size = size + 2;
+         do draw();
+      }
+      return;
+   }
+
+   /** Decrements the square size by 2 pixels. */
+   method void decSize() {
+      if (size > 2) {
+         do erase();
+         let size = size - 2;
+         do draw();
+      }
+      return;
+   }
+
+   /** Moves the square up by 2 pixels. */
+   method void moveUp() {
+      if (y > 1) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+         let y = y - 2;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + size, y + 1);
+      }
+      return;
+   }
+
+   /** Moves the square down by 2 pixels. */
+   method void moveDown() {
+      if ((y + size) < 254) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + size, y + 1);
+         let y = y + 2;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, (y + size) - 1, x + size, y + size);
+      }
+      return;
+   }
+
+   /** Moves the square left by 2 pixels. */
+   method void moveLeft() {
+      if (x > 1) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+         let x = x - 2;
+         do Screen.setColor(true);
+         do Screen.drawRectangle(x, y, x + 1, y + size);
+      }
+      return;
+   }
+
+   /** Moves the square right by 2 pixels. */
+   method void moveRight() {
+      if ((x + size) < 510) {
+         do Screen.setColor(false);
+         do Screen.drawRectangle(x, y, x + 1, y + size);
+         let x = x + 2;
+         do Screen.setColor(true);
+         do Screen.drawRectangle((x + size) - 1, y, x + size, y + size);
+      }
+      return;
+   }
+}
+";
+        const string vmOutput = @"function Square.new 0
+push constant 3
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 2
+push pointer 0
+call Square.draw 1
+pop temp 0
+push pointer 0
+return
+function Square.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Square.draw 0
+push argument 0
+pop pointer 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+return
+function Square.erase 0
+push argument 0
+pop pointer 0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+return
+function Square.incSize 0
+push argument 0
+pop pointer 0
+push this 1
+push this 2
+add
+push constant 254
+lt
+push this 0
+push this 2
+add
+push constant 510
+lt
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+call Square.erase 1
+pop temp 0
+push this 2
+push constant 2
+add
+pop this 2
+push pointer 0
+call Square.draw 1
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Square.decSize 0
+push argument 0
+pop pointer 0
+push this 2
+push constant 2
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push pointer 0
+call Square.erase 1
+pop temp 0
+push this 2
+push constant 2
+sub
+pop this 2
+push pointer 0
+call Square.draw 1
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Square.moveUp 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 1
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 2
+add
+push constant 1
+sub
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push this 1
+push constant 2
+sub
+pop this 1
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push constant 1
+add
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Square.moveDown 0
+push argument 0
+pop pointer 0
+push this 1
+push this 2
+add
+push constant 254
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push constant 1
+add
+call Screen.drawRectangle 4
+pop temp 0
+push this 1
+push constant 2
+add
+pop this 1
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 2
+add
+push constant 1
+sub
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Square.moveLeft 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 1
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 2
+add
+push constant 1
+sub
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push this 0
+push constant 2
+sub
+pop this 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push constant 1
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+function Square.moveRight 0
+push argument 0
+pop pointer 0
+push this 0
+push this 2
+add
+push constant 510
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push constant 1
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+push this 0
+push constant 2
+add
+pop this 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 2
+add
+push constant 1
+sub
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 2
+add
+call Screen.drawRectangle 4
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+";
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new VmCompiler();
+        }
+
+        [TestMethod]
+        public void GeneratesTheCorrectVmCode()
+        {
+            classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
+        }
+    }
+
+    #endregion
+
 
 }
