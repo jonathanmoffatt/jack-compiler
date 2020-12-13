@@ -8,6 +8,8 @@ namespace JackCompiler
     public class VmCompiler
     {
         private IVmWriter vmWriter;
+        private int classSize;
+        private string className;
 
         public void Compile(Node tree, IVmWriter vmWriter)
         {
@@ -20,37 +22,67 @@ namespace JackCompiler
             Expect(tree, NodeType.Class);
             Queue<NodeBase> children = GetChildren(tree);
             Expect(children.Dequeue(), NodeType.Keyword, "class");
-            string className = Expect(children.Dequeue(), NodeType.Identifier);
+            className = Expect(children.Dequeue(), NodeType.Identifier);
             Expect(children.Dequeue(), NodeType.Symbol, "{");
+            classSize = ProcessClassVariableDeclarations(children);
             while (PeekType(children) == NodeType.SubroutineDeclaration)
             {
-                ProcessSubroutineDeclaration(children.Dequeue(), className);
+                ProcessSubroutineDeclaration(children.Dequeue());
             }
             Expect(children.Dequeue(), NodeType.Symbol, "}");
         }
 
-        private void ProcessSubroutineDeclaration(NodeBase subroutineDeclaration, string className)
+        private int ProcessClassVariableDeclarations(Queue<NodeBase> children)
+        {
+            int numberOfFieldDeclarations = 0;
+            while (PeekType(children) == NodeType.ClassVariableDeclaration)
+            {
+                Queue<NodeBase> variableDeclarationChildren = GetChildren(children.Dequeue());
+                string fieldOrStatic = Expect(variableDeclarationChildren.Dequeue(), NodeType.Keyword);
+                if (fieldOrStatic == "field")
+                {
+                    numberOfFieldDeclarations++;
+                    foreach (var varDecChild in variableDeclarationChildren)
+                    {
+                        if (IsSymbol(varDecChild, ",")) numberOfFieldDeclarations++;
+                    }
+                }
+            }
+            return numberOfFieldDeclarations;
+        }
+
+        private void ProcessSubroutineDeclaration(NodeBase subroutineDeclaration)
         {
             Expect(subroutineDeclaration, NodeType.SubroutineDeclaration);
             Queue<NodeBase> children = GetChildren(subroutineDeclaration);
-            string functionOrMethod = Expect(children.Dequeue(), NodeType.Keyword);
-            bool isMethod = functionOrMethod == "method";
-            Token returnType = GetKeyword(children.Dequeue());
+            string functionMethodOrConstructor = Expect(children.Dequeue(), NodeType.Keyword); // function or method or constructor
+            children.Dequeue(); // return type
             string name = Expect(children.Dequeue(), NodeType.Identifier);
             Expect(children.Dequeue(), NodeType.Symbol, "(");
             NodeBase parameterList = children.Dequeue();
             Expect(parameterList, NodeType.ParameterList);
             Expect(children.Dequeue(), NodeType.Symbol, ")");
-            ProcessSubroutineBody(children.Dequeue(), className, name);
+            ProcessSubroutineBody(children.Dequeue(), functionMethodOrConstructor, name);
         }
 
-        private void ProcessSubroutineBody(NodeBase subroutineBody, string className, string name)
+        private void ProcessSubroutineBody(NodeBase subroutineBody, string functionMethodOrConstructor, string name)
         {
             Expect(subroutineBody, NodeType.SubroutineBody);
             Queue<NodeBase> children = GetChildren(subroutineBody);
             Expect(children.Dequeue(), NodeType.Symbol, "{");
             int numberOfVariableDeclarations = ProcessVariableDeclarations(children);
-            vmWriter.Function(className, name, numberOfVariableDeclarations);
+            switch(functionMethodOrConstructor)
+            {
+                case "constructor":
+                    vmWriter.Constructor(className, name, classSize, numberOfVariableDeclarations);
+                    break;
+                case "function":
+                    vmWriter.Function(className, name, numberOfVariableDeclarations);
+                    break;
+                case "method":
+                    vmWriter.Method(className, name, numberOfVariableDeclarations);
+                    break;
+            }
             ProcessStatements(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, "}");
         }
@@ -119,16 +151,20 @@ namespace JackCompiler
             ProcessStatements(children.Dequeue());
 
             Expect(children.Dequeue(), NodeType.Symbol, "}");
-            vmWriter.IfElse(ifStatementNumber);
 
             if (PeekType(children) == NodeType.Keyword && PeekValue(children) == "else")
             {
+                vmWriter.IfElse(ifStatementNumber);
                 Expect(children.Dequeue(), NodeType.Keyword, "else");
                 Expect(children.Dequeue(), NodeType.Symbol, "{");
                 ProcessStatements(children.Dequeue());
                 Expect(children.Dequeue(), NodeType.Symbol, "}");
+                vmWriter.IfElseEnd(ifStatementNumber);
             }
-            vmWriter.IfEnd(ifStatementNumber);
+            else
+            {
+                vmWriter.IfEnd(ifStatementNumber);
+            }
         }
 
         private void ProcessWhileStatement(NodeBase statement)
@@ -160,6 +196,7 @@ namespace JackCompiler
             {
                 case IdentifierKind.Var:
                 case IdentifierKind.Argument:
+                case IdentifierKind.Field:
                     Expect(children.Dequeue(), NodeType.Symbol, "=");
                     ProcessExpression(children.Dequeue());
                     Expect(children.Dequeue(), NodeType.Symbol, ";");
@@ -191,21 +228,23 @@ namespace JackCompiler
             Queue<NodeBase> children = GetChildren(statement);
             Expect(children.Dequeue(), NodeType.Keyword, "do");
             var identifier = GetIdentifier(children.Dequeue());
-            string call = identifier.Value;
+            string call;
             Token token = GetSymbol(children.Dequeue());
-            bool isMethodCall = false;
             if (token.Value == ".")
             {
-                isMethodCall = identifier.ClassType != null;
                 var classMemberIdentifier = GetIdentifier(children.Dequeue());
-                call = $"{(isMethodCall ? identifier.ClassType : identifier.Value)}.{classMemberIdentifier.Value}";
+                call = $"{(identifier.ClassType != null ? identifier.ClassType : identifier.Value)}.{classMemberIdentifier.Value}";
                 token = GetSymbol(children.Dequeue());
+            }
+            else
+            {
+                call = $"{className}.{identifier.Value}";
             }
             Expect(token, NodeType.Symbol, "(");
             int expressionCount = ProcessExpressionList(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, ";");
-            vmWriter.Call(call, expressionCount, isMethodCall);
+            vmWriter.Call(call, expressionCount, identifier);
             vmWriter.DiscardCallResult();
         }
 
@@ -263,6 +302,9 @@ namespace JackCompiler
                             case "false":
                                 vmWriter.PushFalse();
                                 break;
+                            case "this":
+                                vmWriter.PushThis();
+                                break;
                             default:
                                 throw GenerateNotImplementedException(keywordValue);
                         }
@@ -282,10 +324,11 @@ namespace JackCompiler
                                 Expect(children.Dequeue(), NodeType.Symbol, "(");
                                 int expressionCount = ProcessExpressionList(children.Dequeue());
                                 Expect(children.Dequeue(), NodeType.Symbol, ")");
-                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount, false);
+                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount, identifier);
                                 break;
                             case IdentifierKind.Var:
                             case IdentifierKind.Argument:
+                            case IdentifierKind.Field:
                                 vmWriter.Push(identifier);
                                 break;
                             default:

@@ -3,7 +3,7 @@
     public interface IVmWriter
     {
         void Arithmetic(string op);
-        void Call(string call, int expressionCount, bool isMethodCall);
+        void Call(string call, int expressionCount, Identifier identifier);
         void Function(string className, string name, int numberOfVariableDeclarations);
         void Pop(Identifier identifier);
         void Push(Identifier identifier);
@@ -18,9 +18,13 @@
         int GetIfStatementNumber();
         void IfStart(int ifStatementNumber);
         void IfElse(int ifStatementNumber);
-        void IfEnd(int ifStatementNumber);
+        void IfElseEnd(int ifStatementNumber);
         void Unary(string op);
         void Return();
         void DiscardCallResult();
+        void Constructor(string className, string name, int classSize, int numberOfVariableDeclarations);
+        void PushThis();
+        void Method(string className, string name, int numberOfVariableDeclarations);
+        void IfEnd(int ifStatementNumber);
     }
 }

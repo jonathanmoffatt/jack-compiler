@@ -14,11 +14,32 @@ namespace JackCompiler
             this.writer = writer;
         }
 
+
+        public void Constructor(string className, string name, int classSize, int numberOfVariableDeclarations)
+        {
+            Function(className, name, numberOfVariableDeclarations);
+            if (classSize > 0)
+            {
+                writer.WriteLine($"push constant {classSize}");
+                writer.WriteLine("call Memory.alloc 1");
+                writer.WriteLine("pop pointer 0");
+            }
+        }
+
         public void Function(string className, string name, int numberOfVariableDeclarations)
         {
             whileLoopNumber = 0;
             ifStatementNumber = 0;
             writer.WriteLine($"function {className}.{name} {numberOfVariableDeclarations}");
+        }
+
+        public void Method(string className, string name, int numberOfVariableDeclarations)
+        {
+            whileLoopNumber = 0;
+            ifStatementNumber = 0;
+            Function(className, name, numberOfVariableDeclarations);
+            writer.WriteLine("push argument 0");
+            writer.WriteLine("pop pointer 0");
         }
 
         public void Pop(Identifier identifier)
@@ -58,9 +79,33 @@ namespace JackCompiler
                 case IdentifierKind.Field:
                     writer.WriteLine($"push this {identifier.Number}");
                     break;
+                case IdentifierKind.Subroutine:
+                    writer.WriteLine($"push pointer 0");
+                    break;
                 default:
                     throw new ArgumentException($"{identifier.Kind} is not valid for push");
             }
+        }
+
+        public void PushConstant(string constant)
+        {
+            writer.WriteLine($"push constant {constant}");
+        }
+
+        public void PushFalse()
+        {
+            writer.WriteLine("push constant 0");
+        }
+
+        public void PushTrue()
+        {
+            PushFalse();
+            writer.WriteLine("not");
+        }
+
+        public void PushThis()
+        {
+            writer.WriteLine("push pointer 0");
         }
 
         public void ReturnNothing()
@@ -74,12 +119,12 @@ namespace JackCompiler
             writer.WriteLine("return");
         }
 
-        public void Call(string call, int expressionCount, bool isClassStaticMemberCall)
+        public void Call(string call, int expressionCount, Identifier identifier)
         {
-            if (isClassStaticMemberCall)
+            if (identifier.Kind != IdentifierKind.Class)
             {
+                Push(identifier);
                 expressionCount++;
-                writer.WriteLine("push local 0");
             }
             writer.WriteLine($"call {call} {expressionCount}");
         }
@@ -134,27 +179,6 @@ namespace JackCompiler
             }
         }
 
-        public void PushConstant(string constant)
-        {
-            writer.WriteLine($"push constant {constant}");
-        }
-
-        public void PushFalse()
-        {
-            writer.WriteLine("push constant 0");
-        }
-
-        public void PushTrue()
-        {
-            PushFalse();
-            writer.WriteLine("not");
-        }
-
-        public override string ToString()
-        {
-            return writer.ToString();
-        }
-
         private NotImplementedException GenerateNotImplementedException(string missing)
         {
             return new NotImplementedException($"\nNot yet implemented \"{missing}\"\nVM generated so far:\n{writer}");
@@ -200,9 +224,20 @@ namespace JackCompiler
             writer.WriteLine($"label IF_FALSE{ifStatementNumber}");
         }
 
-        public void IfEnd(int ifStatementNumber)
+        public void IfElseEnd(int ifStatementNumber)
         {
             writer.WriteLine($"label IF_END{ifStatementNumber}");
         }
+
+        public void IfEnd(int ifStatementNumber)
+        {
+            writer.WriteLine($"label IF_FALSE{ifStatementNumber}");
+        }
+
+        public override string ToString()
+        {
+            return writer.ToString();
+        }
+
     }
 }
