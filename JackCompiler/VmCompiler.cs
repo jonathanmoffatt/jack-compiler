@@ -323,6 +323,9 @@ namespace JackCompiler
                             case "this":
                                 vmWriter.PushThis();
                                 break;
+                            case "null":
+                                vmWriter.PushConstant("0");
+                                break;
                             default:
                                 throw GenerateNotImplementedException(keywordValue);
                         }
