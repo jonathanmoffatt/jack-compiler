@@ -197,10 +197,25 @@ namespace JackCompiler
                 case IdentifierKind.Var:
                 case IdentifierKind.Argument:
                 case IdentifierKind.Field:
-                    Expect(children.Dequeue(), NodeType.Symbol, "=");
-                    ProcessExpression(children.Dequeue());
-                    Expect(children.Dequeue(), NodeType.Symbol, ";");
-                    vmWriter.Pop(identifier);
+                    if (PeekValue(children) == "[")
+                    {
+                        Expect(children.Dequeue(), NodeType.Symbol, "[");
+                        ProcessExpression(children.Dequeue());
+                        vmWriter.Push(identifier);
+                        vmWriter.IndexArray();
+                        Expect(children.Dequeue(), NodeType.Symbol, "]");
+                        Expect(children.Dequeue(), NodeType.Symbol, "=");
+                        ProcessExpression(children.Dequeue());
+                        Expect(children.Dequeue(), NodeType.Symbol, ";");
+                        vmWriter.AssignArray();
+                    }
+                    else
+                    {
+                        Expect(children.Dequeue(), NodeType.Symbol, "=");
+                        ProcessExpression(children.Dequeue());
+                        Expect(children.Dequeue(), NodeType.Symbol, ";");
+                        vmWriter.Pop(identifier);
+                    }
                     break;
                 default:
                     throw GenerateNotImplementedException(identifier.Kind.ToString());
@@ -292,6 +307,9 @@ namespace JackCompiler
                     case NodeType.IntegerConstant:
                         vmWriter.PushConstant(GetValue(firstChild));
                         break;
+                    case NodeType.StringConstant:
+                        vmWriter.PushStringConstant(GetValue(firstChild));
+                        break;
                     case NodeType.Keyword:
                         string keywordValue = GetValue(firstChild);
                         switch(keywordValue)
@@ -329,7 +347,17 @@ namespace JackCompiler
                             case IdentifierKind.Var:
                             case IdentifierKind.Argument:
                             case IdentifierKind.Field:
-                                vmWriter.Push(identifier);
+                                if (PeekValue(children) == "[")
+                                {
+                                    Expect(children.Dequeue(), NodeType.Symbol, "[");
+                                    ProcessExpression(children.Dequeue());
+                                    vmWriter.Push(identifier);
+                                    vmWriter.AccessArray();
+                                }
+                                else
+                                {
+                                    vmWriter.Push(identifier);
+                                }
                                 break;
                             default:
                                 throw GenerateNotImplementedException(identifier.Kind.ToString());

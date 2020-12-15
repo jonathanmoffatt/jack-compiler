@@ -26,5 +26,9 @@
         void PushThis();
         void Method(string className, string name, int numberOfVariableDeclarations);
         void IfEnd(int ifStatementNumber);
+        void PushStringConstant(string v);
+        void IndexArray();
+        void AssignArray();
+        void AccessArray();
     }
 }

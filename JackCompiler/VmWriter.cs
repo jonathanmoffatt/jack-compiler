@@ -92,6 +92,28 @@ namespace JackCompiler
             writer.WriteLine($"push constant {constant}");
         }
 
+        private void PushConstant(int constant)
+        {
+            PushConstant(constant.ToString());
+        }
+
+        private void PushConstant(char constant)
+        {
+            PushConstant((int)constant);
+        }
+
+        public void PushStringConstant(string constant)
+        {
+            int length = constant.Length;
+            PushConstant(length.ToString());
+            writer.WriteLine("call String.new 1");
+            foreach(char c in constant)
+            {
+                PushConstant(c);
+                writer.WriteLine("call String.appendChar 2");
+            }
+        }
+
         public void PushFalse()
         {
             writer.WriteLine("push constant 0");
@@ -158,6 +180,9 @@ namespace JackCompiler
                     break;
                 case "=":
                     writer.WriteLine("eq");
+                    break;
+                case "/":
+                    writer.WriteLine("call Math.divide 2");
                     break;
                 default:
                     throw GenerateNotImplementedException(op);
@@ -232,6 +257,26 @@ namespace JackCompiler
         public void IfEnd(int ifStatementNumber)
         {
             writer.WriteLine($"label IF_FALSE{ifStatementNumber}");
+        }
+
+        public void IndexArray()
+        {
+            writer.WriteLine("add");
+        }
+
+        public void AccessArray()
+        {
+            writer.WriteLine("add");
+            writer.WriteLine("pop pointer 1");
+            writer.WriteLine("push that 0");
+        }
+
+        public void AssignArray()
+        {
+            writer.WriteLine("pop temp 0");
+            writer.WriteLine("pop pointer 1");
+            writer.WriteLine("push temp 0");
+            writer.WriteLine("pop that 0");
         }
 
         public override string ToString()
