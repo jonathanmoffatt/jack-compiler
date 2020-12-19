@@ -675,4 +675,880 @@ return
     }
 
     #endregion
+
+    #region WhenCompilingPong_Bat
+
+    [TestClass]
+    public class WhenCompilingPong_Bat
+    {
+        private VmCompiler classUnderTest;
+
+        const string jackInput = @"
+// This file is part of www.nand2tetris.org
+// and the book ""The Elements of Computing Systems""
+// by Nisan and Schocken, MIT Press.
+// File name: projects/11/Pong/Bat.jack
+
+/**
+ * A graphical Pong bat. 
+ * Displayed as a filled horizontal rectangle that has 
+ * a screen location, a width and a height.
+ * Has methods for drawing, erasing, moving left and right, 
+ * and changing its width (to make the hitting action more challenging).
+ * This class should have been called ""paddle"", following the 
+ * standard Pong terminology. But, unaware of this terminology,
+ * we called it ""bat"", and then decided to stick to it. 
+ */
+class Bat {
+
+    field int x, y;           // the bat's screen location
+    field int width, height;  // the bat's width and height
+    field int direction;      // direction of the bat's movement (1 = left, 2 = right)
+
+    /** Constructs a new bat with the given location and width. */
+    constructor Bat new(int Ax, int Ay, int Awidth, int Aheight) {
+        let x = Ax;
+        let y = Ay;
+        let width = Awidth;
+        let height = Aheight;
+        let direction = 2;
+        do show();
+        return this;
+    }
+
+    /** Deallocates the object's memory. */
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Shows the bat. */
+    method void show() {
+        do Screen.setColor(true);
+        do draw();
+        return;
+    }
+
+    /** Hides the bat. */
+    method void hide() {
+        do Screen.setColor(false);
+        do draw();
+        return;
+    }
+
+    /** Draws the bat. */
+    method void draw() {
+        do Screen.drawRectangle(x, y, x + width, y + height);
+        return;
+    }
+
+    /** Sets the bat's direction (0=stop, 1=left, 2=right). */
+    method void setDirection(int Adirection) {
+        let direction = Adirection;
+        return;
+    }
+
+    /** Returns the bat's left edge. */
+    method int getLeft() {
+        return x;
+    }
+
+    /** Returns the bat's right edge. */
+    method int getRight() {
+        return x + width;
+    }
+
+    /** Sets the bat's width. */
+    method void setWidth(int Awidth) {
+        do hide();
+        let width = Awidth;
+        do show();
+        return;
+    }
+
+    /** Moves the bat one step in the bat's direction. */
+    method void move() {
+	    if (direction = 1) {
+            let x = x - 4;
+            if (x < 0) { let x = 0; }
+            do Screen.setColor(false);
+            do Screen.drawRectangle((x + width) + 1, y, (x + width) + 4, y + height);
+            do Screen.setColor(true);
+            do Screen.drawRectangle(x, y, x + 3, y + height);
+        }
+        else {
+            let x = x + 4;
+            if ((x + width) > 511) { let x = 511 - width; }
+            do Screen.setColor(false);
+            do Screen.drawRectangle(x - 4, y, x - 1, y + height);
+            do Screen.setColor(true);
+            do Screen.drawRectangle((x + width) - 3, y, x + width, y + height);
+        }
+        return;
+    }
+}
+";
+        const string vmOutput = @"function Bat.new 0
+push constant 5
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push argument 2
+pop this 2
+push argument 3
+pop this 3
+push constant 2
+pop this 4
+push pointer 0
+call Bat.show 1
+pop temp 0
+push pointer 0
+return
+function Bat.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Bat.show 0
+push argument 0
+pop pointer 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push pointer 0
+call Bat.draw 1
+pop temp 0
+push constant 0
+return
+function Bat.hide 0
+push argument 0
+pop pointer 0
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push pointer 0
+call Bat.draw 1
+pop temp 0
+push constant 0
+return
+function Bat.draw 0
+push argument 0
+pop pointer 0
+push this 0
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 3
+add
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+return
+function Bat.setDirection 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 4
+push constant 0
+return
+function Bat.getLeft 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Bat.getRight 0
+push argument 0
+pop pointer 0
+push this 0
+push this 2
+add
+return
+function Bat.setWidth 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Bat.hide 1
+pop temp 0
+push argument 1
+pop this 2
+push pointer 0
+call Bat.show 1
+pop temp 0
+push constant 0
+return
+function Bat.move 0
+push argument 0
+pop pointer 0
+push this 4
+push constant 1
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 0
+push constant 4
+sub
+pop this 0
+push this 0
+push constant 0
+lt
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push constant 0
+pop this 0
+label IF_FALSE1
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 2
+add
+push constant 1
+add
+push this 1
+push this 0
+push this 2
+add
+push constant 4
+add
+push this 1
+push this 3
+add
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 1
+push this 0
+push constant 3
+add
+push this 1
+push this 3
+add
+call Screen.drawRectangle 4
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push this 0
+push constant 4
+add
+pop this 0
+push this 0
+push this 2
+add
+push constant 511
+gt
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 511
+push this 2
+sub
+pop this 0
+label IF_FALSE2
+push constant 0
+call Screen.setColor 1
+pop temp 0
+push this 0
+push constant 4
+sub
+push this 1
+push this 0
+push constant 1
+sub
+push this 1
+push this 3
+add
+call Screen.drawRectangle 4
+pop temp 0
+push constant 0
+not
+call Screen.setColor 1
+pop temp 0
+push this 0
+push this 2
+add
+push constant 3
+sub
+push this 1
+push this 0
+push this 2
+add
+push this 1
+push this 3
+add
+call Screen.drawRectangle 4
+pop temp 0
+label IF_END0
+push constant 0
+return
+";
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new VmCompiler();
+        }
+
+        [TestMethod]
+        public void GeneratesTheCorrectVmCode()
+        {
+            classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
+        }
+    }
+
+    #endregion
+
+    #region WhenCompilingPong_Main
+
+    [TestClass]
+    public class WhenCompilingPong_Main
+    {
+        private VmCompiler classUnderTest;
+
+        const string jackInput = @"
+// This file is part of www.nand2tetris.org
+// and the book ""The Elements of Computing Systems""
+// by Nisan and Schocken, MIT Press.
+// File name: projects/11/Pong/Main.jack
+
+/**
+ * The main class of the Pong game.
+ */
+class Main {
+
+    /** Initializes a Pong game and starts running it. */
+    function void main() {
+        var PongGame game;
+        do PongGame.newInstance();
+        let game = PongGame.getInstance();
+        do game.run();
+        do game.dispose();
+        return;
+    }
+}
+";
+        const string vmOutput = @"function Main.main 1
+call PongGame.newInstance 0
+pop temp 0
+call PongGame.getInstance 0
+pop local 0
+push local 0
+call PongGame.run 1
+pop temp 0
+push local 0
+call PongGame.dispose 1
+pop temp 0
+push constant 0
+return
+";
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new VmCompiler();
+        }
+
+        [TestMethod]
+        public void GeneratesTheCorrectVmCode()
+        {
+            classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
+        }
+    }
+
+    #endregion
+
+    #region WhenCompilingPong_PongGame
+
+    [TestClass]
+    public class WhenCompilingPong_PongGame
+    {
+        private VmCompiler classUnderTest;
+
+        const string jackInput = @"
+// This file is part of www.nand2tetris.org
+// and the book ""The Elements of Computing Systems""
+// by Nisan and Schocken, MIT Press.
+// File name: projects/11/Pong/PongGame.jack
+
+/**
+ * Represents a Pong game.
+ */
+class PongGame {
+
+    static PongGame instance; // the singelton, a Pong game instance     
+    field Bat bat;            // the bat
+    field Ball ball;          // the ball
+    field int wall;           // the current wall that the ball is bouncing off of.
+    field boolean exit;       // true when the game is over
+    field int score;          // the current score.
+    field int lastWall;       // the last wall that the ball bounced off of.
+
+    // The current width of the bat
+    field int batWidth;
+
+    /** Constructs a new Pong game. */
+    constructor PongGame new() {
+	    do Screen.clearScreen();
+        let batWidth = 50;  // initial bat size
+        let bat = Bat.new(230, 229, batWidth, 7);
+        let ball = Ball.new(253, 222, 0, 511, 0, 229);
+        do ball.setDestination(400,0);
+        do Screen.drawRectangle(0, 238, 511, 240);
+	    do Output.moveCursor(22,0);
+	    do Output.printString(""Score: 0"");
+	
+	    let exit = false;
+	    let score = 0;
+	    let wall = 0;
+	    let lastWall = 0;
+
+        return this;
+    }
+
+    /** Deallocates the object's memory. */
+    method void dispose() {
+        do bat.dispose();
+	    do ball.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    /** Creates an instance of Pong game, and stores it. */
+    function void newInstance() {
+        let instance = PongGame.new();
+        return;
+    }
+    
+    /** Returns the single instance of this Pong game. */
+    function PongGame getInstance() {
+        return instance;
+    }
+
+    /** Starts the game, and andles inputs from the user that control
+     *  the bat's movement direction. */
+    method void run() {
+        var char key;
+
+        while (~exit) {
+            // waits for a key to be pressed.
+            while ((key = 0) & (~exit)) {
+                let key = Keyboard.keyPressed();
+                do bat.move();
+                do moveBall();
+                do Sys.wait(50);
+            }
+
+            if (key = 130) { do bat.setDirection(1); }
+	        else {
+	            if (key = 132) { do bat.setDirection(2); }
+		        else {
+                    if (key = 140) { let exit = true; }
+		        }
+            }
+
+            // Waits for the key to be released.
+            while ((~(key = 0)) & (~exit)) {
+                let key = Keyboard.keyPressed();
+                do bat.move();
+                do moveBall();
+                do Sys.wait(50);
+            }
+        }
+
+	    if (exit) {
+            do Output.moveCursor(10,27);
+	        do Output.printString(""Game Over"");
+	    }
+            
+        return;
+    }
+
+    /**
+     * Handles ball movement, including bouncing.
+     * If the ball bounces off a wall, finds its new direction.
+     * If the ball bounces off the bat, increases the score by one
+     * and shrinks the bat's size, to make the game more challenging. 
+     */
+    method void moveBall() {
+        var int bouncingDirection, batLeft, batRight, ballLeft, ballRight;
+
+        let wall = ball.move();
+
+        if ((wall > 0) & (~(wall = lastWall))) {
+            let lastWall = wall;
+            let bouncingDirection = 0;
+            let batLeft = bat.getLeft();
+            let batRight = bat.getRight();
+            let ballLeft = ball.getLeft();
+            let ballRight = ball.getRight();
+  
+            if (wall = 4) {
+                let exit = (batLeft > ballRight) | (batRight < ballLeft);
+                if (~exit) {
+                    if (ballRight < (batLeft + 10)) { let bouncingDirection = -1; }
+                    else {
+                        if (ballLeft > (batRight - 10)) { let bouncingDirection = 1; }
+                    }
+
+                    let batWidth = batWidth - 2;
+                    do bat.setWidth(batWidth);      
+                    let score = score + 1;
+                    do Output.moveCursor(22,7);
+                    do Output.printInt(score);
+                }
+            }
+            do ball.bounce(bouncingDirection);
+        }
+        return;
+    }
+}
+";
+        const string vmOutput = @"function PongGame.new 0
+push constant 7
+call Memory.alloc 1
+pop pointer 0
+call Screen.clearScreen 0
+pop temp 0
+push constant 50
+pop this 6
+push constant 230
+push constant 229
+push this 6
+push constant 7
+call Bat.new 4
+pop this 0
+push constant 253
+push constant 222
+push constant 0
+push constant 511
+push constant 0
+push constant 229
+call Ball.new 6
+pop this 1
+push this 1
+push constant 400
+push constant 0
+call Ball.setDestination 3
+pop temp 0
+push constant 0
+push constant 238
+push constant 511
+push constant 240
+call Screen.drawRectangle 4
+pop temp 0
+push constant 22
+push constant 0
+call Output.moveCursor 2
+pop temp 0
+push constant 8
+call String.new 1
+push constant 83
+call String.appendChar 2
+push constant 99
+call String.appendChar 2
+push constant 111
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 58
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 48
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+push constant 0
+pop this 3
+push constant 0
+pop this 4
+push constant 0
+pop this 2
+push constant 0
+pop this 5
+push pointer 0
+return
+function PongGame.dispose 0
+push argument 0
+pop pointer 0
+push this 0
+call Bat.dispose 1
+pop temp 0
+push this 1
+call Ball.dispose 1
+pop temp 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function PongGame.newInstance 0
+call PongGame.new 0
+pop static 0
+push constant 0
+return
+function PongGame.getInstance 0
+push static 0
+return
+function PongGame.run 1
+push argument 0
+pop pointer 0
+label WHILE_EXP0
+push this 3
+not
+not
+if-goto WHILE_END0
+label WHILE_EXP1
+push local 0
+push constant 0
+eq
+push this 3
+not
+and
+not
+if-goto WHILE_END1
+call Keyboard.keyPressed 0
+pop local 0
+push this 0
+call Bat.move 1
+pop temp 0
+push pointer 0
+call PongGame.moveBall 1
+pop temp 0
+push constant 50
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP1
+label WHILE_END1
+push local 0
+push constant 130
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 0
+push constant 1
+call Bat.setDirection 2
+pop temp 0
+goto IF_END0
+label IF_FALSE0
+push local 0
+push constant 132
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push this 0
+push constant 2
+call Bat.setDirection 2
+pop temp 0
+goto IF_END1
+label IF_FALSE1
+push local 0
+push constant 140
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push constant 0
+not
+pop this 3
+label IF_FALSE2
+label IF_END1
+label IF_END0
+label WHILE_EXP2
+push local 0
+push constant 0
+eq
+not
+push this 3
+not
+and
+not
+if-goto WHILE_END2
+call Keyboard.keyPressed 0
+pop local 0
+push this 0
+call Bat.move 1
+pop temp 0
+push pointer 0
+call PongGame.moveBall 1
+pop temp 0
+push constant 50
+call Sys.wait 1
+pop temp 0
+goto WHILE_EXP2
+label WHILE_END2
+goto WHILE_EXP0
+label WHILE_END0
+push this 3
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 10
+push constant 27
+call Output.moveCursor 2
+pop temp 0
+push constant 9
+call String.new 1
+push constant 71
+call String.appendChar 2
+push constant 97
+call String.appendChar 2
+push constant 109
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 32
+call String.appendChar 2
+push constant 79
+call String.appendChar 2
+push constant 118
+call String.appendChar 2
+push constant 101
+call String.appendChar 2
+push constant 114
+call String.appendChar 2
+call Output.printString 1
+pop temp 0
+label IF_FALSE3
+push constant 0
+return
+function PongGame.moveBall 5
+push argument 0
+pop pointer 0
+push this 1
+call Ball.move 1
+pop this 2
+push this 2
+push constant 0
+gt
+push this 2
+push this 5
+eq
+not
+and
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 2
+pop this 5
+push constant 0
+pop local 0
+push this 0
+call Bat.getLeft 1
+pop local 1
+push this 0
+call Bat.getRight 1
+pop local 2
+push this 1
+call Ball.getLeft 1
+pop local 3
+push this 1
+call Ball.getRight 1
+pop local 4
+push this 2
+push constant 4
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push local 1
+push local 4
+gt
+push local 2
+push local 3
+lt
+or
+pop this 3
+push this 3
+not
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push local 4
+push local 1
+push constant 10
+add
+lt
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push constant 1
+neg
+pop local 0
+goto IF_END3
+label IF_FALSE3
+push local 3
+push local 2
+push constant 10
+sub
+gt
+if-goto IF_TRUE4
+goto IF_FALSE4
+label IF_TRUE4
+push constant 1
+pop local 0
+label IF_FALSE4
+label IF_END3
+push this 6
+push constant 2
+sub
+pop this 6
+push this 0
+push this 6
+call Bat.setWidth 2
+pop temp 0
+push this 4
+push constant 1
+add
+pop this 4
+push constant 22
+push constant 7
+call Output.moveCursor 2
+pop temp 0
+push this 4
+call Output.printInt 1
+pop temp 0
+label IF_FALSE2
+label IF_FALSE1
+push this 1
+push local 0
+call Ball.bounce 2
+pop temp 0
+label IF_FALSE0
+push constant 0
+return
+";
+
+        [TestInitialize]
+        public void Setup()
+        {
+            classUnderTest = new VmCompiler();
+        }
+
+        [TestMethod]
+        public void GeneratesTheCorrectVmCode()
+        {
+            classUnderTest.CompilingJackCode(jackInput).Should().Be(vmOutput);
+        }
+    }
+
+    #endregion
 }

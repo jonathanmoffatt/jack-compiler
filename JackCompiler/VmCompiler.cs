@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace JackCompiler
@@ -192,33 +191,24 @@ namespace JackCompiler
             Queue<NodeBase> children = GetChildren(statement);
             Expect(children.Dequeue(), NodeType.Keyword, "let");
             Identifier identifier = GetIdentifier(children.Dequeue());
-            switch(identifier.Kind)
+            if (PeekValue(children) == "[")
             {
-                case IdentifierKind.Var:
-                case IdentifierKind.Argument:
-                case IdentifierKind.Field:
-                    if (PeekValue(children) == "[")
-                    {
-                        Expect(children.Dequeue(), NodeType.Symbol, "[");
-                        ProcessExpression(children.Dequeue());
-                        vmWriter.Push(identifier);
-                        vmWriter.IndexArray();
-                        Expect(children.Dequeue(), NodeType.Symbol, "]");
-                        Expect(children.Dequeue(), NodeType.Symbol, "=");
-                        ProcessExpression(children.Dequeue());
-                        Expect(children.Dequeue(), NodeType.Symbol, ";");
-                        vmWriter.AssignArray();
-                    }
-                    else
-                    {
-                        Expect(children.Dequeue(), NodeType.Symbol, "=");
-                        ProcessExpression(children.Dequeue());
-                        Expect(children.Dequeue(), NodeType.Symbol, ";");
-                        vmWriter.Pop(identifier);
-                    }
-                    break;
-                default:
-                    throw GenerateNotImplementedException(identifier.Kind.ToString());
+                Expect(children.Dequeue(), NodeType.Symbol, "[");
+                ProcessExpression(children.Dequeue());
+                vmWriter.Push(identifier);
+                vmWriter.IndexArray();
+                Expect(children.Dequeue(), NodeType.Symbol, "]");
+                Expect(children.Dequeue(), NodeType.Symbol, "=");
+                ProcessExpression(children.Dequeue());
+                Expect(children.Dequeue(), NodeType.Symbol, ";");
+                vmWriter.AssignArray();
+            }
+            else
+            {
+                Expect(children.Dequeue(), NodeType.Symbol, "=");
+                ProcessExpression(children.Dequeue());
+                Expect(children.Dequeue(), NodeType.Symbol, ";");
+                vmWriter.Pop(identifier);
             }
         }
 
@@ -242,7 +232,16 @@ namespace JackCompiler
         {
             Queue<NodeBase> children = GetChildren(statement);
             Expect(children.Dequeue(), NodeType.Keyword, "do");
+
             var identifier = GetIdentifier(children.Dequeue());
+            ProcessSubroutineCall(children, identifier);
+
+            Expect(children.Dequeue(), NodeType.Symbol, ";");
+            vmWriter.DiscardCallResult();
+        }
+
+        private void ProcessSubroutineCall(Queue<NodeBase> children, Identifier identifier)
+        {
             string call;
             Token token = GetSymbol(children.Dequeue());
             if (token.Value == ".")
@@ -264,9 +263,7 @@ namespace JackCompiler
             Expect(token, NodeType.Symbol, "(");
             argumentCount += ProcessExpressionList(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, ")");
-            Expect(children.Dequeue(), NodeType.Symbol, ";");
             vmWriter.Call(call, argumentCount);
-            vmWriter.DiscardCallResult();
         }
 
         private int ProcessExpressionList(NodeBase expressionList)
@@ -300,24 +297,25 @@ namespace JackCompiler
         {
             Expect(term, NodeType.Term);
             Queue<NodeBase> children = GetChildren(term);
-            NodeBase firstChild = children.Dequeue();
-            if (IsSymbol(firstChild, "("))
+            if (PeekValue(children) == "(")
             {
+                Expect(children.Dequeue(), NodeType.Symbol, "(");
                 ProcessExpression(children.Dequeue());
                 Expect(children.Dequeue(), NodeType.Symbol, ")");
             }
             else
             {
-                switch(firstChild.Type)
+                NodeType? type = PeekType(children);
+                switch (type)
                 {
                     case NodeType.IntegerConstant:
-                        vmWriter.PushConstant(GetValue(firstChild));
+                        vmWriter.PushConstant(GetValue(children.Dequeue()));
                         break;
                     case NodeType.StringConstant:
-                        vmWriter.PushStringConstant(GetValue(firstChild));
+                        vmWriter.PushStringConstant(GetValue(children.Dequeue()));
                         break;
                     case NodeType.Keyword:
-                        string keywordValue = GetValue(firstChild);
+                        string keywordValue = GetValue(children.Dequeue());
                         switch(keywordValue)
                         {
                             case "true":
@@ -337,43 +335,30 @@ namespace JackCompiler
                         }
                         break;
                     case NodeType.Symbol:
+                        string unaryOp = Expect(children.Dequeue(), NodeType.Symbol);
                         ProcessTerm(children.Dequeue());
-                        string unaryOp = GetValue(firstChild);
                         vmWriter.Unary(unaryOp);
                         break;
                     case NodeType.Identifier:
-                        Identifier identifier = GetIdentifier(firstChild);
-                        switch (identifier.Kind)
+                        Identifier identifier = GetIdentifier(children.Dequeue());
+                        if (PeekValue(children) == "." || PeekValue(children) == "(")
                         {
-                            case IdentifierKind.Class:
-                                Expect(children.Dequeue(), NodeType.Symbol, ".");
-                                Identifier subroutine = GetIdentifier(children.Dequeue());
-                                Expect(children.Dequeue(), NodeType.Symbol, "(");
-                                int expressionCount = ProcessExpressionList(children.Dequeue());
-                                Expect(children.Dequeue(), NodeType.Symbol, ")");
-                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount);
-                                break;
-                            case IdentifierKind.Var:
-                            case IdentifierKind.Argument:
-                            case IdentifierKind.Field:
-                                if (PeekValue(children) == "[")
-                                {
-                                    Expect(children.Dequeue(), NodeType.Symbol, "[");
-                                    ProcessExpression(children.Dequeue());
-                                    vmWriter.Push(identifier);
-                                    vmWriter.AccessArray();
-                                }
-                                else
-                                {
-                                    vmWriter.Push(identifier);
-                                }
-                                break;
-                            default:
-                                throw GenerateNotImplementedException(identifier.Kind.ToString());
+                            ProcessSubroutineCall(children, identifier);
+                        }
+                        else if (PeekValue(children) == "[")
+                        {
+                            Expect(children.Dequeue(), NodeType.Symbol, "[");
+                            ProcessExpression(children.Dequeue());
+                            vmWriter.Push(identifier);
+                            vmWriter.AccessArray();
+                        }
+                        else
+                        {
+                            vmWriter.Push(identifier);
                         }
                         break;
                     default:
-                        throw GenerateNotImplementedException(firstChild.Type.ToString());
+                        throw GenerateNotImplementedException(type.ToString());
                 }
             }
         }
