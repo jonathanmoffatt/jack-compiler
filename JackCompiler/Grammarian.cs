@@ -64,9 +64,9 @@ namespace JackCompiler
 
         public Node ParseSubroutineDeclaration()
         {
-            symbolTable.ResetSubroutineTable();
             var sd = new Node(NodeType.SubroutineDeclaration);
-            DequeueKeyword(sd);
+            bool isMethod = DequeueKeyword(sd) == "method";
+            symbolTable.ResetSubroutineTable(isMethod);
             string className = DequeueType(sd);
             DequeueIdentifierDeclaration(sd, IdentifierKind.Subroutine, className, "expected subroutine name");
             DequeueSymbol(sd, "(");
@@ -302,12 +302,13 @@ namespace JackCompiler
                 throw new ApplicationException("class variable definition expected a type, reached end of file instead");
         }
 
-        private void DequeueKeyword(Node parent)
+        private string DequeueKeyword(Node parent)
         {
             Token keyword = Dequeue();
             if (keyword.Type != NodeType.Keyword)
                 throw new ApplicationException($"expected keyword, got {keyword} instead");
             parent.AddChild(keyword);
+            return keyword.Value;
         }
 
         private void DequeueIdentifierDeclaration(Node parent, IdentifierKind kind, string classType, string error)

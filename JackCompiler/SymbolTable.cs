@@ -8,6 +8,7 @@ namespace JackCompiler
     {
         private List<SymbolLookup> classSymbols;
         private List<SymbolLookup> subroutineSymbols;
+        private bool isMethod;
 
         public static bool IsClassOrSubroutine(IdentifierKind kind)
         {
@@ -30,9 +31,10 @@ namespace JackCompiler
             subroutineSymbols = new List<SymbolLookup>();
         }
 
-        public void ResetSubroutineTable()
+        public void ResetSubroutineTable(bool isMethod)
         {
             subroutineSymbols = new List<SymbolLookup>();
+            this.isMethod = isMethod;
         }
 
         public SymbolLookup Add(string name, IdentifierKind kind, string classType)
@@ -47,6 +49,7 @@ namespace JackCompiler
             if (IsArgumentOrVar(kind))
             {
                 int number = subroutineSymbols.Count(s => s.Kind == kind);
+                if (isMethod && kind == IdentifierKind.Argument) number++;
                 symbol = new SymbolLookup { Name = name, Kind = kind, Number = number, ClassType = classType };
                 subroutineSymbols.Add(symbol);
             }

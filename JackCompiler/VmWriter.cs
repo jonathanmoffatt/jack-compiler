@@ -141,13 +141,8 @@ namespace JackCompiler
             writer.WriteLine("return");
         }
 
-        public void Call(string call, int expressionCount, Identifier identifier)
+        public void Call(string call, int expressionCount)
         {
-            if (identifier.Kind != IdentifierKind.Class)
-            {
-                Push(identifier);
-                expressionCount++;
-            }
             writer.WriteLine($"call {call} {expressionCount}");
         }
 
@@ -177,6 +172,9 @@ namespace JackCompiler
                     break;
                 case "&":
                     writer.WriteLine("and");
+                    break;
+                case "|":
+                    writer.WriteLine("or");
                     break;
                 case "=":
                     writer.WriteLine("eq");

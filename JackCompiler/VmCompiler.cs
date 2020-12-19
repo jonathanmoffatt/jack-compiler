@@ -255,11 +255,17 @@ namespace JackCompiler
             {
                 call = $"{className}.{identifier.Value}";
             }
+            int argumentCount = 0;
+            if (identifier.Kind != IdentifierKind.Class)
+            {
+                vmWriter.Push(identifier);
+                argumentCount++;
+            }
             Expect(token, NodeType.Symbol, "(");
-            int expressionCount = ProcessExpressionList(children.Dequeue());
+            argumentCount += ProcessExpressionList(children.Dequeue());
             Expect(children.Dequeue(), NodeType.Symbol, ")");
             Expect(children.Dequeue(), NodeType.Symbol, ";");
-            vmWriter.Call(call, expressionCount, identifier);
+            vmWriter.Call(call, argumentCount);
             vmWriter.DiscardCallResult();
         }
 
@@ -345,7 +351,7 @@ namespace JackCompiler
                                 Expect(children.Dequeue(), NodeType.Symbol, "(");
                                 int expressionCount = ProcessExpressionList(children.Dequeue());
                                 Expect(children.Dequeue(), NodeType.Symbol, ")");
-                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount, identifier);
+                                vmWriter.Call($"{identifier.Value}.{subroutine.Value}", expressionCount);
                                 break;
                             case IdentifierKind.Var:
                             case IdentifierKind.Argument:

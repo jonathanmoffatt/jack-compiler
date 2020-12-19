@@ -280,10 +280,10 @@ namespace JackCompiler.Tests
                     <symbol>(</symbol>
                     <parameterList>
                       <keyword>int</keyword>
-                      <identifier kind='argument' isDefinition='true' number='0'>x</identifier>
+                      <identifier kind='argument' isDefinition='true' number='1'>x</identifier>
                       <symbol>,</symbol>
                       <identifier kind='class' isDefinition='false'>Game</identifier>
-                      <identifier kind='argument' isDefinition='true' number='1' classType='Game'>game</identifier>
+                      <identifier kind='argument' isDefinition='true' number='2' classType='Game'>game</identifier>
                     </parameterList>
                     <symbol>)</symbol>
                     <subroutineBody>
